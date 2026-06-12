@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+/* Partner logo marquee (Trusted By Industry Leaders section) */
+@keyframes bcp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.bcp-marquee {
+  animation: bcp-marquee 30s linear infinite;
+}
+
+.bcp-marquee-reverse {
+  animation-direction: reverse;
+}
+
+.bcp-marquee-row:hover .bcp-marquee {
+  animation-play-state: paused;
+}
+
+/* "What Makes BCP Different" — bars fall from above and settle with a bounce */
+@keyframes bcp-stack-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-140px) rotate(0deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(10px) rotate(var(--tilt));
+  }
+  75% {
+    transform: translateY(-6px) rotate(var(--tilt));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--tilt));
+  }
+}
+
+.bcp-stack-drop {
+  animation: bcp-stack-drop 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcp-stack-drop {
+    animation: none;
+    opacity: 1;
+  }
+}
