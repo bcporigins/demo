@@ -6,9 +6,15 @@ import { SubscribeForm } from '@/components/bcp/subscribe-form'
 export const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
+  { href: '/team', label: 'Meet the Team' },
   { href: '/events', label: 'Events' },
   { href: '/community', label: 'Community' },
-  { href: '/#faqs', label: 'FAQs' },
+  { href: '/careers', label: 'Careers' },
+  { href: '/gallery', label: 'Gallery' },
+  { href: '/partners', label: 'Partners' },
+  { href: '/programs', label: 'Programs' },
+  { href: '/regional-host', label: 'Become a Regional Host' },
+  { href: '/resources', label: 'Resources' },
   { href: '/contact', label: 'Contact Us' },
 ]
 
