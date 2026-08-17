@@ -1,29 +1,37 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Twitter, Youtube, Linkedin } from 'lucide-react'
+import { Facebook, Twitter, Youtube, Linkedin, Instagram } from 'lucide-react'
 import { SubscribeForm } from '@/components/bcp/subscribe-form'
+import { SOCIALS as SOCIAL_URLS } from '@/lib/site'
 
+// Labels are kept short so all twelve links sit on one unwrapped row from
+// 1024px up; the hamburger menu takes over below that.
 export const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
-  { href: '/team', label: 'Meet the Team' },
+  { href: '/team', label: 'Team' },
   { href: '/events', label: 'Events' },
   { href: '/community', label: 'Community' },
   { href: '/careers', label: 'Careers' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/partners', label: 'Partners' },
   { href: '/programs', label: 'Programs' },
-  { href: '/regional-host', label: 'Become a Regional Host' },
+  { href: '/regional-host', label: 'Regional Host' },
   { href: '/resources', label: 'Resources' },
-  { href: '/contact', label: 'Contact Us' },
+  { href: '/contact', label: 'Contact' },
 ]
 
-const SOCIALS = [
-  { icon: Facebook, label: 'Facebook', href: '#' },
-  { icon: Twitter, label: 'Twitter', href: '#' },
-  { icon: Youtube, label: 'YouTube', href: '#' },
-  { icon: Linkedin, label: 'LinkedIn', href: '#' },
-]
+// Accounts with a blank URL in lib/site.ts are dropped rather than linked to
+// a dead "#", so the footer only ever shows channels BCP actually runs.
+export const SOCIALS = (
+  [
+    { icon: Facebook, label: 'Facebook', href: SOCIAL_URLS.facebook },
+    { icon: Twitter, label: 'X (Twitter)', href: SOCIAL_URLS.twitter },
+    { icon: Instagram, label: 'Instagram', href: SOCIAL_URLS.instagram },
+    { icon: Youtube, label: 'YouTube', href: SOCIAL_URLS.youtube },
+    { icon: Linkedin, label: 'LinkedIn', href: SOCIAL_URLS.linkedin },
+  ] as const
+).filter((social) => social.href.length > 0)
 
 // Isometric cube grid approximating the Figma hero pattern overlay
 const HERO_PATTERN = {
@@ -34,23 +42,79 @@ const HERO_PATTERN = {
   ].join(', '),
 }
 
+/** True for links that leave the site and should open in a new tab. */
+export function isExternal(href: string) {
+  return /^(https?:|mailto:|tel:)/.test(href)
+}
+
+/**
+ * The site's signature offset-shadow button. Pass `href` to render it as a
+ * link (internal hrefs go through next/link, external ones open in a new
+ * tab); omit it for a plain button, e.g. a form submit.
+ */
 export function BrutalButton({
   children,
   className = '',
   variant = 'yellow',
+  href,
+  type,
+  disabled,
+  ...rest
 }: {
   children: React.ReactNode
   className?: string
-  variant?: 'yellow' | 'beige'
+  variant?: 'yellow' | 'beige' | 'white'
+  href?: string
+  type?: 'button' | 'submit'
+  disabled?: boolean
+  'aria-label'?: string
 }) {
+  const background =
+    variant === 'yellow' ? 'bg-[#fed07b]' : variant === 'white' ? 'bg-[#fbfbfb]' : 'bg-[#ebe8e3]'
+  const classes = `flex h-[50px] items-center justify-center rounded-[3px] border-2 border-[#1f1f1f] px-5 text-center text-[18px] font-bold leading-7 text-[#2b3034] shadow-[4px_4px_0px_#1f1f1f] transition-transform [font-family:var(--font-raleway)] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#1f1f1f] ${background} ${className}`
+
+  if (href) {
+    return isExternal(href) ? (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={classes} {...rest}>
+        {children}
+      </a>
+    ) : (
+      <Link href={href} className={classes} {...rest}>
+        {children}
+      </Link>
+    )
+  }
   return (
-    <button
-      className={`flex h-[50px] items-center justify-center rounded-[3px] border-2 border-[#1f1f1f] px-5 text-[18px] font-bold leading-7 text-[#2b3034] shadow-[4px_4px_0px_#1f1f1f] transition-transform [font-family:var(--font-raleway)] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#1f1f1f] ${
-        variant === 'yellow' ? 'bg-[#fed07b]' : 'bg-[#ebe8e3]'
-      } ${className}`}
-    >
+    <button type={type ?? 'button'} disabled={disabled} className={classes} {...rest}>
       {children}
     </button>
+  )
+}
+
+/** Renders a row of social icons; nothing at all when none are configured. */
+export function SocialIcons({
+  className = '',
+  iconClassName = 'bg-[#fbfbfb] text-[#2b3034] hover:bg-[#fed07b]',
+}: {
+  className?: string
+  iconClassName?: string
+}) {
+  if (SOCIALS.length === 0) return null
+  return (
+    <div className={`flex items-center gap-3 ${className}`}>
+      {SOCIALS.map(({ icon: Icon, label, href }) => (
+        <a
+          key={label}
+          href={href}
+          aria-label={label}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex size-[50px] items-center justify-center rounded-full transition-colors ${iconClassName}`}
+        >
+          <Icon className="size-5" />
+        </a>
+      ))}
+    </div>
   )
 }
 
@@ -90,7 +154,10 @@ export function BcpHero({
 
 export function JoinCommunity() {
   return (
-    <section className="relative overflow-hidden bg-[#f2f2f2] py-[68px]">
+    <section
+      id="join-the-community"
+      className="relative overflow-hidden bg-[#f2f2f2] py-[68px] scroll-mt-24"
+    >
       {/* Decorative envelope clusters, positioned per the Figma Section-8 */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <img src="/bcp/envelope-4.svg" alt="" className="absolute left-[9.7%] top-[36%] w-[60px] md:w-[91px]" />
@@ -137,18 +204,7 @@ export function BcpFooter() {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
-          {SOCIALS.map(({ icon: Icon, label, href }) => (
-            <Link
-              key={label}
-              href={href}
-              aria-label={label}
-              className="flex size-[50px] items-center justify-center rounded-full bg-[#fbfbfb] text-[#2b3034] transition-colors hover:bg-[#fed07b]"
-            >
-              <Icon className="size-5" />
-            </Link>
-          ))}
-        </div>
+        <SocialIcons />
       </div>
     </footer>
   )

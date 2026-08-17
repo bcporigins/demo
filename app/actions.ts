@@ -47,9 +47,45 @@ export async function contactAction(_prev: FormState, formData: FormData): Promi
   if (!name || !EMAIL_RE.test(email) || !message) {
     return { status: 'error', message: 'Please fill in your name, a valid email, and a message.' }
   }
-  const result = await submitContactMessage({ name, email, message })
+  const result = await submitContactMessage({ name, email, message, source: 'Contact page' })
   return result.ok
     ? { status: 'success', message: 'Message received — we usually respond within a couple of days.' }
+    : { status: 'error', message: result.error }
+}
+
+/** Partners page "Let's Build Together". Lands in the same Notion Contact
+ *  Messages database as the contact form, tagged Source = Partnership
+ *  inquiry, with the organisation and partnership type recorded alongside. */
+export async function partnershipInquiryAction(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const name = String(formData.get('name') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim()
+  const organization = String(formData.get('organization') ?? '').trim()
+  const partnershipType = String(formData.get('partnershipType') ?? '').trim()
+  const message = String(formData.get('message') ?? '').trim()
+
+  if (!name || !EMAIL_RE.test(email) || !message) {
+    return {
+      status: 'error',
+      message: 'Please fill in your name, a valid email, and a short message.',
+    }
+  }
+  const result = await submitContactMessage({
+    name,
+    email,
+    message,
+    organization,
+    partnershipType,
+    source: 'Partnership inquiry',
+  })
+  return result.ok
+    ? {
+        status: 'success',
+        message:
+          'Thanks — your enquiry is with the partnerships team and they will reply from brand@bcporigins.com.',
+      }
     : { status: 'error', message: result.error }
 }
 

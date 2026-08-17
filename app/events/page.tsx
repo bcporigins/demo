@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { BcpEventsPage } from '@/components/bcp/events-page'
 
+// Events and the live calendar come from Notion — refresh at most every 60s
+export const revalidate = 60
+
 export const metadata: Metadata = {
   title: 'Events | BCP',
   description:

@@ -1,4 +1,7 @@
+import Link from 'next/link'
 import {
+  ArrowRight,
+  Youtube,
   GraduationCap,
   Rocket,
   Medal,
@@ -13,6 +16,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { BcpHero, BrutalButton, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import { getPostsByType } from '@/lib/notion'
+import { WHATSAPP_COMMUNITY, YOUTUBE_CHANNEL } from '@/lib/site'
 
 /* ------------------------------------------------------------------ */
 /* Who it's for — colored audience chips                               */
@@ -134,7 +139,9 @@ function HowToJoin() {
             Ready to connect with ambitious young Africans and unlock opportunities?
           </p>
         </div>
-        <BrutalButton className="h-[64px] w-[296px]">Join the BCP Community</BrutalButton>
+        <BrutalButton href={WHATSAPP_COMMUNITY} className="h-[64px] w-[296px]">
+          Join the BCP Community
+        </BrutalButton>
       </div>
     </section>
   )
@@ -144,37 +151,54 @@ function HowToJoin() {
 /* Origin stories                                                      */
 /* ------------------------------------------------------------------ */
 
-const ORIGIN_STORIES = [
+// Shown until the Notion blog has posts of type "Origin Story". These link to
+// the blog index rather than a specific post, since none exists yet.
+const FALLBACK_STORIES = [
   {
+    href: '/resources#blog',
     title: 'Alumni who secured jobs',
     body: 'From job searching to landing dream roles at top companies across Africa and beyond.',
   },
   {
+    href: '/resources#blog',
     title: 'Founders who raised funds',
     body: 'Turned ideas into funded startups with community support and mentorship.',
   },
   {
+    href: '/resources#blog',
     title: 'Students who gained clarity',
     body: 'Discovered their path and built skills that set them apart from their peers.',
   },
   {
+    href: '/resources#blog',
     title: 'Regional hosts who built networks',
     body: 'Created thriving local communities and became leaders in their regions.',
   },
 ]
 
-function OriginStories() {
+async function OriginStories() {
+  const posts = await getPostsByType('Origin Story')
+  const cards =
+    posts.length > 0
+      ? posts.map((post) => ({
+          href: `/blog/${post.slug}`,
+          title: post.title,
+          body: post.excerpt,
+        }))
+      : FALLBACK_STORIES
+
   return (
-    <section className="bg-[#fbfbfb] pt-[55px] pb-[40px]">
+    <section className="bg-[#fbfbfb] pb-[40px] pt-[55px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-6 lg:px-20">
         <h2 className="text-center text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
           Origin stories
         </h2>
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
-          {ORIGIN_STORIES.map(({ title, body }) => (
-            <div
+          {cards.map(({ href, title, body }) => (
+            <Link
               key={title}
-              className="flex flex-col justify-center gap-3.5 border-[6px] border-[#2b3034] bg-[#fbfbfb] px-[33px] py-6"
+              href={href}
+              className="group flex flex-col justify-center gap-3.5 border-[6px] border-[#2b3034] bg-[#fbfbfb] px-[33px] py-6 transition-transform hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2b3034]"
             >
               <h3 className="text-[20px] font-medium leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
                 {title}
@@ -182,8 +206,16 @@ function OriginStories() {
               <p className="text-[20px] leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
                 {body}
               </p>
-            </div>
+              <span className="flex items-center gap-1.5 text-[18px] text-[#1c75bc] [font-family:var(--font-raleway)] group-hover:underline">
+                Read the story <ArrowRight className="size-4" />
+              </span>
+            </Link>
           ))}
+        </div>
+        <div className="mt-8 flex justify-center">
+          <BrutalButton href={YOUTUBE_CHANNEL} variant="beige" className="h-[60px] gap-2.5">
+            <Youtube className="size-6" strokeWidth={1.75} /> Watch more on YouTube
+          </BrutalButton>
         </div>
       </div>
     </section>

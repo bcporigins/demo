@@ -1,17 +1,67 @@
 'use client'
 
 import { useRef } from 'react'
-import Image from 'next/image'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import type { BcpVideo } from '@/lib/notion'
+import { youTubeVideoId, youTubeThumbnail } from '@/lib/site'
 
-const VIDEOS = [
-  { title: 'BCP 24, Akure', tag: 'Watch Replay', sub: 'a Speaker Session, A Pitch session', thumb: '/bcp/collage-1.png' },
-  { title: 'BCP 24, Akure', tag: 'Media', sub: 'a Speaker Session, A Pitch session', thumb: '/bcp/collage-2.png' },
-  { title: 'BCP 24, Akure', tag: 'Watch Replay', sub: 'a Speaker Session, A Pitch session', thumb: '/bcp/collage-3.png' },
-  { title: 'BCP 24, Akure', tag: 'Watch Replay', sub: 'a Speaker Session, A Pitch session', thumb: '/bcp/collage-4.png' },
-]
+/* ------------------------------------------------------------------ */
+/* Highlight carousel. Each card opens its YouTube video in a new tab; */
+/* rows without a URL yet stay as plain, non-clickable cards.          */
+/* ------------------------------------------------------------------ */
 
-export function VideoHighlights() {
+function HighlightCard({ video }: { video: BcpVideo }) {
+  const videoId = youTubeVideoId(video.url)
+  const thumb = video.thumbnail ?? (videoId ? youTubeThumbnail(videoId) : null)
+
+  const body = (
+    <>
+      <div className="relative h-[160px] w-full overflow-hidden border-2 border-[#1f1f1f] bg-[#d9d9d9]">
+        {thumb && (
+          // Notion thumbnails are short-lived signed URLs, and YouTube's own
+          // thumbnails are remote — both bypass next/image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumb} alt={video.title} className="size-full object-cover" />
+        )}
+        {video.url && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity group-hover:opacity-100">
+            <Play className="size-12 fill-white text-white" />
+          </span>
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <h3 className="text-[16px] font-semibold text-[#2b3034] [font-family:var(--font-hepta-slab)]">
+          {video.title}
+        </h3>
+        {video.url && (
+          <span className="whitespace-nowrap text-[11px] text-[#2b3034] [font-family:var(--font-raleway)]">
+            Watch Replay
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-[13px] text-[#5f5f64] [font-family:var(--font-raleway)]">
+        {video.subtitle}
+      </p>
+    </>
+  )
+
+  const shell =
+    'group block w-[300px] shrink-0 border-4 border-[#1f1f1f] bg-white p-2.5 shadow-[4px_4px_0px_#1f1f1f]'
+
+  if (!video.url) return <article className={shell}>{body}</article>
+  return (
+    <a
+      href={video.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${shell} transition-transform hover:-translate-y-0.5`}
+    >
+      {body}
+    </a>
+  )
+}
+
+export function VideoHighlights({ videos }: { videos: BcpVideo[] }) {
   const track = useRef<HTMLDivElement>(null)
 
   const scrollBy = (dir: 1 | -1) => {
@@ -29,24 +79,8 @@ export function VideoHighlights() {
         <ChevronLeft className="size-8" />
       </button>
       <div ref={track} className="flex flex-1 gap-8 overflow-x-auto scroll-smooth pb-2">
-        {VIDEOS.map(({ title, tag, sub, thumb }, i) => (
-          <article
-            key={i}
-            className="w-[300px] shrink-0 border-4 border-[#1f1f1f] bg-white p-2.5 shadow-[4px_4px_0px_#1f1f1f]"
-          >
-            <div className="relative h-[160px] w-full overflow-hidden border-2 border-[#1f1f1f]">
-              <Image src={thumb} alt={title} fill sizes="300px" className="object-cover" />
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <h3 className="text-[16px] font-semibold text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-                {title}
-              </h3>
-              <span className="whitespace-nowrap text-[11px] text-[#2b3034] [font-family:var(--font-raleway)]">
-                {tag}
-              </span>
-            </div>
-            <p className="mt-1 text-[13px] text-[#5f5f64] [font-family:var(--font-raleway)]">{sub}</p>
-          </article>
+        {videos.map((video) => (
+          <HighlightCard key={video.id} video={video} />
         ))}
       </div>
       <button

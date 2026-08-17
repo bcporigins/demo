@@ -568,13 +568,23 @@ export async function submitHostApplication(
 /* Contact messages                                                    */
 /* ------------------------------------------------------------------ */
 
-export async function submitContactMessage(input: {
+export type ContactInput = {
   name: string
   email: string
   message: string
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+  /** Which form the message came from, recorded on the Notion row. */
+  source?: 'Contact page' | 'Partnership inquiry'
+  organization?: string
+  partnershipType?: string
+}
+
+export async function submitContactMessage(
+  input: ContactInput
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const isPartnership = input.source === 'Partnership inquiry'
+  const contactAddress = isPartnership ? 'brand@bcporigins.com' : 'help@bcporigins.com'
   if (!process.env.NOTION_TOKEN || !process.env.NOTION_CONTACT_DATABASE_ID) {
-    return { ok: false, error: 'The contact form is not set up yet. Please email help@bcporigins.com.' }
+    return { ok: false, error: `This form is not set up yet. Please email ${contactAddress}.` }
   }
   try {
     const notion = notionClient()
@@ -586,13 +596,18 @@ export async function submitContactMessage(input: {
         Name: { title: rt(input.name) },
         Email: { email: input.email },
         Message: { rich_text: rt(input.message.slice(0, 2000)) },
+        Source: { select: { name: input.source ?? 'Contact page' } },
+        ...(input.organization ? { Organization: { rich_text: rt(input.organization) } } : {}),
+        ...(input.partnershipType
+          ? { 'Partnership Type': { select: { name: input.partnershipType } } }
+          : {}),
         Status: { select: { name: 'New' } },
       } as any,
     })
     return { ok: true }
   } catch (err) {
     console.error('[notion] submitContactMessage failed:', err)
-    return { ok: false, error: 'Something went wrong. Please try again, or email help@bcporigins.com.' }
+    return { ok: false, error: `Something went wrong. Please try again, or email ${contactAddress}.` }
   }
 }
 
@@ -676,4 +691,520 @@ export async function getGalleryEditions(): Promise<GalleryEdition[]> {
     console.error('[notion] getGalleryEditions failed, using fallback:', err)
     return FALLBACK_GALLERY
   }
+}
+
+/* ================================================================== */
+/* Editable site content                                              */
+/*                                                                    */
+/* Everything below follows one shape: a Notion database whose rows    */
+/* have a `Published` checkbox and an `Order` number, mapped into a    */
+/* plain object. Each getter falls back to the values baked in here    */
+/* when the database is not connected, so the site renders the same    */
+/* either way and content can be moved into Notion one table at a      */
+/* time. See NOTION-SETUP.md for the column list of each database.     */
+/* ================================================================== */
+
+/** Typed readers for a page's properties, matched case-insensitively so a
+ *  column renamed from "Bio" to "bio" in Notion does not blank the site. */
+function readProps(page: NotionPage) {
+  const find = (name: string) =>
+    Object.entries(page.properties).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1]
+
+  const files = (name: string) =>
+    ((find(name)?.files ?? []) as any[])
+      .map((f) => (f.type === 'external' ? f.external?.url : f.file?.url))
+      .filter(Boolean) as string[]
+
+  return {
+    title: (name: string) => plain(find(name)?.title),
+    text: (name: string) => plain(find(name)?.rich_text),
+    select: (name: string) => (find(name)?.select?.name as string | undefined) ?? '',
+    url: (name: string) => (find(name)?.url as string | null) ?? '',
+    number: (name: string) => (find(name)?.number as number | null) ?? null,
+    date: (name: string) => (find(name)?.date?.start as string | null) ?? null,
+    checkbox: (name: string) => Boolean(find(name)?.checkbox),
+    files,
+    file: (name: string) => files(name)[0] ?? null,
+    /** The page's own cover image, useful when a row has no Image column. */
+    cover: () =>
+      (page.cover?.type === 'external' ? page.cover.external?.url : page.cover?.file?.url) ?? null,
+  }
+}
+
+type Props = ReturnType<typeof readProps>
+
+/**
+ * Queries one content database and maps its rows. Returns `null` — rather
+ * than an empty array — when the database is unconfigured, unreachable, or
+ * empty, which is the signal for the caller to use its fallback content.
+ */
+async function queryCollection<T>(
+  label: string,
+  databaseId: string | undefined,
+  map: (p: Props, page: NotionPage) => T | null,
+  sort: { property: string; direction: 'ascending' | 'descending' } = {
+    property: 'Order',
+    direction: 'ascending',
+  }
+): Promise<T[] | null> {
+  if (!process.env.NOTION_TOKEN || !databaseId) return null
+  try {
+    const notion = notionClient()
+    const dataSourceId = await getDataSourceId(notion, databaseId)
+    const res = (await notion.dataSources.query({
+      data_source_id: dataSourceId,
+      filter: { property: 'Published', checkbox: { equals: true } },
+      sorts: [sort],
+    })) as { results: NotionPage[] }
+    const rows = res.results
+      .map((page) => map(readProps(page), page))
+      .filter((row): row is T => row !== null)
+    return rows.length > 0 ? rows : null
+  } catch (err) {
+    console.error(`[notion] ${label} failed, using fallback content:`, err)
+    return null
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* People — core team, regional hosts, advisors, community ambassadors */
+/* ------------------------------------------------------------------ */
+
+export type PersonGroup = 'Core Team' | 'Regional Host' | 'Advisor' | 'Community Ambassador'
+
+export type Person = {
+  id: string
+  name: string
+  role: string
+  bio: string
+  photo: string
+  linkedin: string
+  group: PersonGroup
+}
+
+const PLACEHOLDER_PORTRAIT = '/bcp/core-values-photo.png'
+
+const PLACEHOLDER_BIO =
+  'Dedicated individuals working to empower the next generation of African Leaders.'
+
+function placeholderPeople(group: PersonGroup, count: number): Person[] {
+  return Array.from({ length: count }).map((_, i) => ({
+    id: `fallback-${group.toLowerCase().replace(/\s+/g, '-')}-${i}`,
+    name: 'Toluwase Olugbemiro',
+    role: group === 'Regional Host' ? 'Regional Host' : 'Core Team',
+    bio: PLACEHOLDER_BIO,
+    photo: PLACEHOLDER_PORTRAIT,
+    linkedin: '',
+    group,
+  }))
+}
+
+const PERSON_GROUPS: PersonGroup[] = [
+  'Core Team',
+  'Regional Host',
+  'Advisor',
+  'Community Ambassador',
+]
+
+/** All published people, grouped. Missing groups fall back to placeholders so
+ *  the layout keeps its shape before the Notion table is filled in. */
+export async function getPeople(group: PersonGroup): Promise<Person[]> {
+  const rows = await queryCollection<Person>(
+    'getPeople',
+    process.env.NOTION_PEOPLE_DATABASE_ID,
+    (p, page) => {
+      const name = p.title('Name')
+      if (!name) return null
+      const raw = p.select('Group')
+      const matched = PERSON_GROUPS.find((g) => g.toLowerCase() === raw.toLowerCase())
+      return {
+        id: page.id,
+        name,
+        role: p.text('Role'),
+        bio: p.text('Bio') || PLACEHOLDER_BIO,
+        photo: p.file('Photo') ?? p.cover() ?? PLACEHOLDER_PORTRAIT,
+        linkedin: p.url('LinkedIn'),
+        group: matched ?? 'Core Team',
+      }
+    }
+  )
+  if (!rows) {
+    // Community ambassadors have no placeholder roster — the section hides
+    // itself until real people are added in Notion.
+    if (group === 'Community Ambassador') return []
+    if (group === 'Advisor') return []
+    return placeholderPeople(group, group === 'Core Team' ? 15 : 6)
+  }
+  const inGroup = rows.filter((person) => person.group === group)
+  if (inGroup.length > 0) return inGroup
+  if (group === 'Community Ambassador' || group === 'Advisor') return []
+  return placeholderPeople(group, group === 'Core Team' ? 15 : 6)
+}
+
+/* ------------------------------------------------------------------ */
+/* Partner logos                                                       */
+/* ------------------------------------------------------------------ */
+
+export type PartnerLogo = { id: string; name: string; logo: string; url: string }
+
+export const FALLBACK_PARTNERS: PartnerLogo[] = [
+  '/bcp/partner-1.png',
+  '/bcp/partner-2.png',
+  '/bcp/partner-3.png',
+  '/bcp/partner-4.png',
+  '/bcp/partner-5.png',
+  '/bcp/partner-6.png',
+].map((logo, i) => ({ id: `fallback-partner-${i}`, name: 'Partner', logo, url: '' }))
+
+export async function getPartners(): Promise<PartnerLogo[]> {
+  const rows = await queryCollection<PartnerLogo>(
+    'getPartners',
+    process.env.NOTION_PARTNERS_DATABASE_ID,
+    (p, page) => {
+      const logo = p.file('Logo') ?? p.cover()
+      if (!logo) return null
+      return {
+        id: page.id,
+        name: p.title('Name') || 'Partner',
+        logo,
+        url: p.url('Website'),
+      }
+    }
+  )
+  return rows ?? FALLBACK_PARTNERS
+}
+
+/* ------------------------------------------------------------------ */
+/* Impact stats — the numbered tiles in the home page collage          */
+/* ------------------------------------------------------------------ */
+
+export type Stat = { id: string; value: string; label: string; icon: string }
+
+export const FALLBACK_STATS: Stat[] = [
+  { id: 'fallback-stat-1', value: '6000+', label: 'Young Africans impacted', icon: 'users' },
+  {
+    id: 'fallback-stat-2',
+    value: '80%+',
+    label: 'BCP alumni now work in leading organizations',
+    icon: 'briefcase',
+  },
+  {
+    id: 'fallback-stat-3',
+    value: '4',
+    label: 'Countries reached (Nigeria, UK, Canada, Cyprus)',
+    icon: 'globe',
+  },
+  { id: 'fallback-stat-4', value: '100+', label: 'Speakers hosted since 2022', icon: 'speech' },
+]
+
+export async function getStats(): Promise<Stat[]> {
+  const rows = await queryCollection<Stat>(
+    'getStats',
+    process.env.NOTION_STATS_DATABASE_ID,
+    (p, page) => {
+      const value = p.title('Value')
+      if (!value) return null
+      return {
+        id: page.id,
+        value,
+        label: p.text('Label'),
+        icon: p.select('Icon').toLowerCase() || 'users',
+      }
+    }
+  )
+  return rows ?? FALLBACK_STATS
+}
+
+/* ------------------------------------------------------------------ */
+/* Testimonials                                                        */
+/* ------------------------------------------------------------------ */
+
+export type Testimonial = { id: string; quote: string; name: string; role: string; photo: string }
+
+export const FALLBACK_TESTIMONIALS: Testimonial[] = Array.from({ length: 3 }).map((_, i) => ({
+  id: `fallback-testimonial-${i}`,
+  quote: 'BCP changed how I think about career growth and gave me the clarity I needed.',
+  name: 'Toluwase Olugbemiro',
+  role: 'BCP Alumni',
+  photo: '/bcp/testimonial-avatar.png',
+}))
+
+export async function getTestimonials(): Promise<Testimonial[]> {
+  const rows = await queryCollection<Testimonial>(
+    'getTestimonials',
+    process.env.NOTION_TESTIMONIALS_DATABASE_ID,
+    (p, page) => {
+      const quote = p.title('Quote') || p.text('Quote')
+      if (!quote) return null
+      return {
+        id: page.id,
+        quote,
+        name: p.text('Name'),
+        role: p.text('Role'),
+        photo: p.file('Photo') ?? '/bcp/testimonial-avatar.png',
+      }
+    }
+  )
+  return rows ?? FALLBACK_TESTIMONIALS
+}
+
+/* ------------------------------------------------------------------ */
+/* Events — flagship, mini experiences, and past editions              */
+/* ------------------------------------------------------------------ */
+
+export type BcpEvent = {
+  id: string
+  title: string
+  tagline: string
+  kind: 'Flagship' | 'Mini'
+  /** ISO yyyy-mm-dd in the event's own local date, or null if undated. */
+  date: string | null
+  city: string
+  summary: string
+  cover: string | null
+  /** Registration or details link. */
+  url: string
+}
+
+export const FALLBACK_FLAGSHIP: BcpEvent = {
+  id: 'fallback-flagship',
+  title: 'BCP’26',
+  tagline: 'The Beginning of Tomorrow',
+  kind: 'Flagship',
+  date: '2026-10-01',
+  city: 'Lagos',
+  summary:
+    'Stakeholders Meeting, The Beginning of Tomorrow. Join us in Lagos in October 2026 for an inspiring gathering of minds.',
+  cover: '/bcp/events-hero.png',
+  url: '',
+}
+
+async function getEvents(): Promise<BcpEvent[] | null> {
+  return queryCollection<BcpEvent>(
+    'getEvents',
+    process.env.NOTION_EVENTS_DATABASE_ID,
+    (p, page) => {
+      const title = p.title('Title')
+      if (!title) return null
+      const kind = p.select('Kind').toLowerCase() === 'flagship' ? 'Flagship' : 'Mini'
+      return {
+        id: page.id,
+        title,
+        tagline: p.text('Tagline'),
+        kind,
+        date: p.date('Date'),
+        city: p.text('City'),
+        summary: p.text('Summary'),
+        cover: p.file('Cover') ?? p.cover(),
+        url: p.url('Register URL') || p.url('URL'),
+      }
+    },
+    { property: 'Date', direction: 'ascending' }
+  )
+}
+
+/** Today at midnight UTC, so an event dated today still counts as upcoming. */
+function startOfToday() {
+  const now = new Date()
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+}
+
+function isUpcoming(event: BcpEvent) {
+  return event.date !== null && new Date(`${event.date}T00:00:00Z`) >= startOfToday()
+}
+
+/** The next flagship edition — drives the home page and the events hero. */
+export async function getUpcomingFlagship(): Promise<BcpEvent> {
+  const events = await getEvents()
+  if (!events) return FALLBACK_FLAGSHIP
+  const flagship = events.filter((e) => e.kind === 'Flagship')
+  return flagship.find(isUpcoming) ?? flagship.at(-1) ?? FALLBACK_FLAGSHIP
+}
+
+/** Dated mini experiences from today onwards, for the calendar. */
+export async function getMiniEvents(): Promise<BcpEvent[]> {
+  const events = await getEvents()
+  if (!events) return []
+  return events.filter((e) => e.kind === 'Mini' && e.date !== null)
+}
+
+/** Editions that have already happened, newest first. */
+export async function getPastEvents(): Promise<BcpEvent[]> {
+  const events = await getEvents()
+  if (!events) return []
+  return events
+    .filter((e) => !isUpcoming(e))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+}
+
+/* ------------------------------------------------------------------ */
+/* Videos — gallery highlights and event recaps, hosted on YouTube     */
+/* ------------------------------------------------------------------ */
+
+export type BcpVideo = {
+  id: string
+  title: string
+  subtitle: string
+  /** 'Highlight' feeds the carousel; 'Recap' feeds the three recap cards. */
+  group: 'Highlight' | 'Recap'
+  location: string
+  url: string
+  thumbnail: string | null
+}
+
+export const FALLBACK_HIGHLIGHTS: BcpVideo[] = [
+  '/bcp/collage-1.png',
+  '/bcp/collage-2.png',
+  '/bcp/collage-3.png',
+  '/bcp/collage-4.png',
+].map((thumbnail, i) => ({
+  id: `fallback-highlight-${i}`,
+  title: 'BCP 24, Akure',
+  subtitle: 'a Speaker Session, A Pitch session',
+  group: 'Highlight' as const,
+  location: 'Akure',
+  url: '',
+  thumbnail,
+}))
+
+export const FALLBACK_RECAPS: BcpVideo[] = [
+  { location: 'Akure', thumbnail: '/bcp/recap-akure.png' },
+  { location: 'Kaduna', thumbnail: '/bcp/recap-kaduna.png' },
+  { location: 'Calabar', thumbnail: '/bcp/partner-photo-2.png' },
+].map(({ location, thumbnail }, i) => ({
+  id: `fallback-recap-${i}`,
+  title: `BCP’25 ${location}`,
+  subtitle: 'Recap',
+  group: 'Recap' as const,
+  location,
+  url: '',
+  thumbnail,
+}))
+
+export async function getVideos(group: 'Highlight' | 'Recap'): Promise<BcpVideo[]> {
+  const rows = await queryCollection<BcpVideo>(
+    'getVideos',
+    process.env.NOTION_VIDEOS_DATABASE_ID,
+    (p, page) => {
+      const title = p.title('Title')
+      if (!title) return null
+      return {
+        id: page.id,
+        title,
+        subtitle: p.text('Subtitle'),
+        group: p.select('Group').toLowerCase() === 'recap' ? 'Recap' : 'Highlight',
+        location: p.text('Location'),
+        url: p.url('YouTube URL') || p.url('URL'),
+        thumbnail: p.file('Thumbnail') ?? p.cover(),
+      }
+    }
+  )
+  const fallback = group === 'Recap' ? FALLBACK_RECAPS : FALLBACK_HIGHLIGHTS
+  if (!rows) return fallback
+  const inGroup = rows.filter((video) => video.group === group)
+  return inGroup.length > 0 ? inGroup : fallback
+}
+
+/* ------------------------------------------------------------------ */
+/* Resource links — host library, downloads, media kit                 */
+/* ------------------------------------------------------------------ */
+
+export type ResourceLink = {
+  id: string
+  label: string
+  description: string
+  group: string
+  icon: string
+  url: string
+}
+
+export const FALLBACK_HOST_RESOURCES: ResourceLink[] = [
+  { label: 'Host guide', icon: 'book' },
+  { label: 'Event planning checklist', icon: 'checklist' },
+  { label: 'Branding assets', icon: 'palette' },
+  { label: 'Templates', icon: 'file' },
+].map(({ label, icon }, i) => ({
+  id: `fallback-host-resource-${i}`,
+  label,
+  description: '',
+  group: 'Host Library',
+  icon,
+  url: '',
+}))
+
+export async function getResourceLinks(group: string): Promise<ResourceLink[]> {
+  const rows = await queryCollection<ResourceLink>(
+    'getResourceLinks',
+    process.env.NOTION_RESOURCES_DATABASE_ID,
+    (p, page) => {
+      const label = p.title('Label')
+      if (!label) return null
+      return {
+        id: page.id,
+        label,
+        description: p.text('Description'),
+        group: p.select('Group') || 'Host Library',
+        icon: p.select('Icon').toLowerCase() || 'file',
+        url: p.url('URL') || p.file('File') || '',
+      }
+    }
+  )
+  if (!rows) return group === 'Host Library' ? FALLBACK_HOST_RESOURCES : []
+  const inGroup = rows.filter((row) => row.group.toLowerCase() === group.toLowerCase())
+  if (inGroup.length > 0) return inGroup
+  return group === 'Host Library' ? FALLBACK_HOST_RESOURCES : []
+}
+
+/* ------------------------------------------------------------------ */
+/* Partnership types — the "Find the right partnership" cards          */
+/* ------------------------------------------------------------------ */
+
+export type PartnershipType = { id: string; title: string; body: string; url: string }
+
+export const FALLBACK_PARTNERSHIPS: PartnershipType[] = [
+  {
+    title: 'Event Sponsorship',
+    body: 'Align your brand with our flagship events, conferences, and hackathons.',
+  },
+  {
+    title: 'Community Sponsorship',
+    body: 'Gain year round visibility and engagement as a key supporter of the BCP community.',
+  },
+  {
+    title: 'Corporate Talent Development',
+    body: 'Custom programs to upskill your team or build a bespoke talent pipeline.',
+  },
+  {
+    title: 'Venue/ logistics Partnerships',
+    body: 'Host a BCP experience at your space, or power one with travel and logistics support.',
+  },
+  {
+    title: 'Corporate Talent Development Programs',
+    body: 'Multi-cohort programmes that turn your graduate intake into job-ready operators.',
+  },
+].map((row, i) => ({ id: `fallback-partnership-${i}`, url: '', ...row }))
+
+export async function getPartnershipTypes(): Promise<PartnershipType[]> {
+  const rows = await queryCollection<PartnershipType>(
+    'getPartnershipTypes',
+    process.env.NOTION_PARTNERSHIPS_DATABASE_ID,
+    (p, page) => {
+      const title = p.title('Title')
+      if (!title) return null
+      return { id: page.id, title, body: p.text('Body'), url: p.url('URL') }
+    }
+  )
+  return rows ?? FALLBACK_PARTNERSHIPS
+}
+
+/* ------------------------------------------------------------------ */
+/* Story feeds — reuse the blog database, split by its Type column     */
+/* ------------------------------------------------------------------ */
+
+/** Published posts whose Type matches, e.g. "Impact Story" or "Origin Story".
+ *  Returns an empty array when nothing matches, so callers can fall back. */
+export async function getPostsByType(type: string): Promise<BlogPost[]> {
+  const posts = await getPosts()
+  if (posts === FALLBACK_POSTS) return []
+  return posts.filter((post) => post.type.toLowerCase() === type.toLowerCase())
 }

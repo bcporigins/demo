@@ -9,10 +9,14 @@ import {
   ListChecks,
   Palette,
   FileText,
+  Presentation,
+  Video,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react'
-import { BcpHero, BcpFooter } from '@/components/bcp/ui'
-import { HostApplyForm } from '@/components/bcp/host-apply-form'
+import { BcpHero, BcpFooter, isExternal } from '@/components/bcp/ui'
+import { HostApplication } from '@/components/bcp/host-application'
+import { getResourceLinks } from '@/lib/notion'
 
 /* ------------------------------------------------------------------ */
 /* Host Benefits                                                       */
@@ -133,20 +137,9 @@ function Requirements() {
 /* Host Application Form                                               */
 /* ------------------------------------------------------------------ */
 
-const FIELD_CLASSES =
-  'w-full rounded-[3px] border-2 border-[#1f1f1f] bg-[#fefefe] px-6 text-[14px] leading-5 text-[#2f363d] shadow-[4px_4px_0px_0px_#1f1f1f] [font-family:var(--font-raleway)] placeholder:text-[#9aa1a7] focus:outline-none focus:ring-2 focus:ring-[#fed07b]'
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[20px] font-semibold leading-[27px] text-[#2b3034] [font-family:var(--font-raleway)]">
-      {children}
-    </span>
-  )
-}
-
 function ApplicationForm() {
   return (
-    <section className="bg-[#fbfbfb] pt-[100px]">
+    <section id="host-application" className="bg-[#fbfbfb] pt-[100px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[50px] px-6 lg:px-[79px]">
         <h2 className="text-[36px] font-semibold leading-[48px] text-[#121212] [font-family:var(--font-hepta-slab)]">
           Host Application Form
@@ -155,7 +148,7 @@ function ApplicationForm() {
           <p className="text-center text-[18px] leading-[27px] text-[#2b3034] [font-family:var(--font-raleway)]">
             Please fill out the form below to apply. We&rsquo;re excited to learn more about you.
           </p>
-          <HostApplyForm source="Regional Host page" submitLabel="Submit" />
+          <HostApplication source="Regional Host page" submitLabel="Submit" />
         </div>
       </div>
     </section>
@@ -164,16 +157,25 @@ function ApplicationForm() {
 
 /* ------------------------------------------------------------------ */
 /* Resource Library                                                    */
+/*                                                                     */
+/* Rows come from the Notion Resources table (Group = "Host Library"), */
+/* so hosts get new material by adding a row with a link, not a build. */
 /* ------------------------------------------------------------------ */
 
-const RESOURCES: { icon: LucideIcon; label: string }[] = [
-  { icon: BookOpenText, label: 'Host guide' },
-  { icon: ListChecks, label: 'Event planning checklist' },
-  { icon: Palette, label: 'Branding assets' },
-  { icon: FileText, label: 'Templates' },
-]
+// Icon names selectable in the Notion "Icon" column
+const RESOURCE_ICONS: Record<string, LucideIcon> = {
+  book: BookOpenText,
+  checklist: ListChecks,
+  palette: Palette,
+  file: FileText,
+  download: Download,
+  deck: Presentation,
+  video: Video,
+}
 
-function ResourceLibrary() {
+async function ResourceLibrary() {
+  const resources = await getResourceLinks('Host Library')
+  if (resources.length === 0) return null
   return (
     <section className="bg-[#fbfbfb] py-[115px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[50px] px-6 lg:px-20">
@@ -181,17 +183,48 @@ function ResourceLibrary() {
           Resource Library
         </h2>
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
-          {RESOURCES.map(({ icon: Icon, label }) => (
-            <div
-              key={label}
-              className="flex min-h-[110px] items-center gap-3.5 border-[6px] border-[#2b3034] bg-[#fbfbfb] px-[33px] py-6"
-            >
-              <Icon className="size-[30px] shrink-0 text-[#2b3034]" strokeWidth={1.75} />
-              <p className="text-[20px] font-medium leading-7 text-[#2b3034] [font-family:var(--font-raleway)] md:text-[24px]">
-                {label}
-              </p>
-            </div>
-          ))}
+          {resources.map(({ id, label, description, icon, url }) => {
+            const Icon = RESOURCE_ICONS[icon] ?? FileText
+            const inner = (
+              <>
+                <Icon className="size-[30px] shrink-0 text-[#2b3034]" strokeWidth={1.75} />
+                <span className="flex flex-col">
+                  <span className="text-[20px] font-medium leading-7 text-[#2b3034] [font-family:var(--font-raleway)] md:text-[24px]">
+                    {label}
+                  </span>
+                  {description && (
+                    <span className="mt-1 text-[16px] leading-6 text-[#5f5f64] [font-family:var(--font-raleway)]">
+                      {description}
+                    </span>
+                  )}
+                </span>
+                {url && (
+                  <ExternalLink
+                    className="ml-auto size-5 shrink-0 text-[#5f5f64]"
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                )}
+              </>
+            )
+            const shell =
+              'flex min-h-[110px] items-center gap-3.5 border-[6px] border-[#2b3034] bg-[#fbfbfb] px-[33px] py-6'
+            // A row with no URL yet still renders, just not as a dead link
+            return url ? (
+              <a
+                key={id}
+                href={url}
+                {...(isExternal(url) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                className={`${shell} transition-transform hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#1f1f1f]`}
+              >
+                {inner}
+              </a>
+            ) : (
+              <div key={id} className={shell}>
+                {inner}
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

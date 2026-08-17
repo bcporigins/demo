@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { BcpHero, BrutalButton, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import { WHATSAPP_COMMUNITY } from '@/lib/site'
 
 type Program = {
   title: string
@@ -18,6 +19,8 @@ type Program = {
   target: string
   benefits: string
   cta: string
+  /** Where the card's CTA goes. External URLs open in a new tab. */
+  href: string
 }
 
 const PROGRAMS: Program[] = [
@@ -30,6 +33,7 @@ const PROGRAMS: Program[] = [
     target: 'Innovators, Leaders',
     benefits: 'Networking, Insight',
     cta: 'Learn More',
+    href: '/events',
   },
   {
     title: 'Regional Host Program',
@@ -40,6 +44,7 @@ const PROGRAMS: Program[] = [
     target: 'Community Builders',
     benefits: 'Leadership, Impact',
     cta: 'Apply Now',
+    href: '/regional-host#host-application',
   },
   {
     title: 'BCP Community',
@@ -50,6 +55,7 @@ const PROGRAMS: Program[] = [
     target: 'All members',
     benefits: 'Connections, Resources',
     cta: 'Join Community',
+    href: WHATSAPP_COMMUNITY,
   },
   {
     title: 'Workshops & Learning',
@@ -60,6 +66,7 @@ const PROGRAMS: Program[] = [
     target: 'Skill seekers',
     benefits: 'Upskilling, Certification',
     cta: 'View Workshops',
+    href: '/events',
   },
   {
     title: 'Career Launchpad (2026)',
@@ -70,6 +77,7 @@ const PROGRAMS: Program[] = [
     target: 'Ambitious graduates',
     benefits: 'Mentorship, Placement',
     cta: 'Notify Me',
+    href: '/#join-the-community',
   },
   {
     title: 'BCP Ambassadors',
@@ -80,6 +88,7 @@ const PROGRAMS: Program[] = [
     target: 'Student leaders',
     benefits: 'Advocacy, Growth',
     cta: 'Become an Ambassador',
+    href: '/careers#open-roles',
   },
 ]
 
@@ -121,7 +130,9 @@ function ProgramCard({ program }: { program: Program }) {
           Benefits: {program.benefits}
         </p>
       </div>
-      <BrutalButton className="mt-auto w-full">{program.cta}</BrutalButton>
+      <BrutalButton href={program.href} className="mt-auto w-full">
+        {program.cta}
+      </BrutalButton>
     </article>
   )
 }

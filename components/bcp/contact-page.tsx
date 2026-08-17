@@ -1,17 +1,10 @@
-import Link from 'next/link'
-import { Facebook, Twitter, Linkedin } from 'lucide-react'
-import { BcpHero, BrutalButton, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import { BcpHero, BrutalButton, JoinCommunity, BcpFooter, SocialIcons } from '@/components/bcp/ui'
 import { ContactForm } from '@/components/bcp/contact-form'
+import { EMAILS, PHONE, WHATSAPP_COMMUNITY } from '@/lib/site'
 
 /* ------------------------------------------------------------------ */
 /* Contact Us — form with social icons                                 */
 /* ------------------------------------------------------------------ */
-
-const SOCIALS = [
-  { icon: Facebook, label: 'Facebook', href: '#' },
-  { icon: Twitter, label: 'Twitter', href: '#' },
-  { icon: Linkedin, label: 'LinkedIn', href: '#' },
-]
 
 function ContactSection() {
   return (
@@ -27,18 +20,10 @@ function ContactSection() {
           <h2 className="text-[36px] font-semibold leading-[48px] text-[#121212] [font-family:var(--font-hepta-slab)]">
             Contact Us
           </h2>
-          <div className="flex items-center gap-6">
-            {SOCIALS.map(({ icon: Icon, label, href }) => (
-              <Link
-                key={label}
-                href={href}
-                aria-label={label}
-                className="flex size-[50px] items-center justify-center rounded-full bg-[#2b3034] text-[#fbfbfb] transition-colors hover:bg-[#fed07b] hover:text-[#2b3034]"
-              >
-                <Icon className="size-5" />
-              </Link>
-            ))}
-          </div>
+          <SocialIcons
+            className="gap-6"
+            iconClassName="bg-[#2b3034] text-[#fbfbfb] hover:bg-[#fed07b] hover:text-[#2b3034]"
+          />
         </div>
         <ContactForm />
       </div>
@@ -50,7 +35,7 @@ function ContactSection() {
 /* Contact Info band                                                   */
 /* ------------------------------------------------------------------ */
 
-function InfoColumn({ heading, value }: { heading: string; value: string }) {
+function InfoColumn({ heading, value, href }: { heading: string; value: string; href: string }) {
   return (
     <div className="flex flex-col gap-5 p-6">
       <div className="flex flex-col gap-[19px]">
@@ -60,9 +45,12 @@ function InfoColumn({ heading, value }: { heading: string; value: string }) {
         <span className="h-[2.25px] w-[20.25px] bg-black" />
       </div>
       <div className="flex flex-col gap-[19px]">
-        <p className="text-[16.5px] font-semibold text-black [font-family:var(--font-inter)]">
+        <a
+          href={href}
+          className="text-[16.5px] font-semibold text-black underline-offset-4 hover:underline [font-family:var(--font-inter)]"
+        >
           {value}
-        </p>
+        </a>
         <p className="max-w-[185px] text-[15px] leading-6 text-black [font-family:var(--font-inter)]">
           Assistance hours:
           <br />
@@ -92,8 +80,17 @@ function ContactInfo() {
           </h2>
         </div>
         <div className="flex flex-col gap-8 sm:flex-row sm:gap-[76px]">
-          <InfoColumn heading="Email Address" value="help@bcporigins.com" />
-          <InfoColumn heading="Number" value="(808) 998-34256" />
+          <InfoColumn
+            heading="Email Address"
+            value={EMAILS.general}
+            href={`mailto:${EMAILS.general}`}
+          />
+          <InfoColumn
+            heading="Partnerships"
+            value={EMAILS.brand}
+            href={`mailto:${EMAILS.brand}`}
+          />
+          <InfoColumn heading="Number" value={PHONE.display} href={`tel:${PHONE.tel}`} />
         </div>
       </div>
     </section>
@@ -116,7 +113,9 @@ function JoinOurCommunity() {
             Ready to connect with ambitious young Africans and unlock opportunities?
           </p>
         </div>
-        <BrutalButton className="h-[64px] w-[296px]">Join the BCP Community</BrutalButton>
+        <BrutalButton href={WHATSAPP_COMMUNITY} className="h-[64px] w-[296px]">
+          Join the BCP Community
+        </BrutalButton>
       </div>
     </section>
   )

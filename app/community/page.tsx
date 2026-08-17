@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { BcpCommunityPage } from '@/components/bcp/community-page'
 
+// Origin stories come from the Notion blog — refresh at most every 60s
+export const revalidate = 60
+
 export const metadata: Metadata = {
   title: 'Community | BCP',
   description:

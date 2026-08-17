@@ -1,37 +1,32 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import {
   Users,
   Globe,
   BriefcaseBusiness,
   Speech,
+  Award,
+  Building2,
+  CalendarDays,
+  MapPin,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
-import { JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import { JoinCommunity, BcpFooter, BrutalButton } from '@/components/bcp/ui'
+import { PartnerMarquee } from '@/components/bcp/partner-marquee'
 import { FaqAccordion } from '@/components/bcp/faq'
-import { getFaqs } from '@/lib/notion'
+import {
+  getFaqs,
+  getStats,
+  getTestimonials,
+  getPartners,
+  getUpcomingFlagship,
+  type Stat,
+} from '@/lib/notion'
+import { WHATSAPP_COMMUNITY, REGISTER_MAILTO } from '@/lib/site'
 
 /* ------------------------------------------------------------------ */
 /* Hero                                                                */
 /* ------------------------------------------------------------------ */
-
-function HeroButton({
-  children,
-  variant = 'yellow',
-}: {
-  children: React.ReactNode
-  variant?: 'yellow' | 'white'
-}) {
-  return (
-    <button
-      className={`flex h-[64px] items-center justify-center rounded-[3px] border-2 border-[#1f1f1f] px-5 text-[18px] font-bold leading-7 text-[#2b3034] shadow-[4px_4px_0px_#1f1f1f] transition-transform [font-family:var(--font-raleway)] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#1f1f1f] ${
-        variant === 'yellow' ? 'bg-[#fed07b]' : 'bg-[#fbfbfb]'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
 
 function HomeHero() {
   return (
@@ -46,10 +41,15 @@ function HomeHero() {
       />
       <div aria-hidden className="absolute inset-0 bg-black/30" />
       <div className="relative mx-auto flex min-h-[770px] w-full max-w-[1253px] flex-col justify-center gap-6 px-6 py-24 lg:px-0">
-        <div className="flex max-w-[680px] flex-col gap-2.5 bg-[rgba(128,113,86,0.04)] backdrop-blur-[2px]">
-          <h1 className="text-[44px] font-bold leading-[1.25] tracking-[0.01em] text-[#fbfbfb] [font-family:var(--font-hepta-slab)] md:text-[68px]">
-            <span className="text-[#fed07b]">Building</span> the Next Generation of African
-            Talent.
+        <div className="flex max-w-[680px] flex-col gap-2.5 bg-[rgba(128,113,86,0.04)] backdrop-blur-[2px] md:max-w-[780px]">
+          {/* Three fixed lines from md up, where the longest one fits on one
+              row; below that the phrases wrap naturally to stay readable. */}
+          <h1 className="text-[40px] font-bold leading-[1.25] tracking-[0.01em] text-[#fbfbfb] [font-family:var(--font-hepta-slab)] sm:text-[52px] md:text-[62px]">
+            <span className="block md:whitespace-nowrap">
+              <span className="text-[#fed07b]">Building</span> the
+            </span>
+            <span className="block md:whitespace-nowrap">Next Generation</span>
+            <span className="block md:whitespace-nowrap">Of African Talents</span>
           </h1>
           <p className="max-w-[553px] text-[20px] font-medium leading-7 text-[#ebe8e3] [font-family:var(--font-raleway)] md:text-[24px]">
             A global community empowering young Africans with the knowledge, network, and
@@ -57,8 +57,12 @@ function HomeHero() {
           </p>
         </div>
         <div className="mt-7 flex flex-col gap-5 sm:flex-row sm:items-center">
-          <HeroButton variant="yellow">Register for Upcoming Events</HeroButton>
-          <HeroButton variant="white">Join Our Community</HeroButton>
+          <BrutalButton href="/events" className="h-[64px]">
+            Register for Upcoming Events
+          </BrutalButton>
+          <BrutalButton href={WHATSAPP_COMMUNITY} variant="white" className="h-[64px]">
+            Join Our Community
+          </BrutalButton>
         </div>
       </div>
     </section>
@@ -69,16 +73,16 @@ function HomeHero() {
 /* BCP events across the world — staggered collage of stats + photos   */
 /* ------------------------------------------------------------------ */
 
-type Tile =
-  | { kind: 'stat'; icon: LucideIcon; value: string; label: string }
-  | { kind: 'photo'; src: string }
+type Tile = { kind: 'stat'; statIndex: number } | { kind: 'photo'; src: string }
 
-// Six columns of two tiles; offsets recreate the checkerboard stagger in Figma
+// Six columns of two tiles; offsets recreate the checkerboard stagger in
+// Figma. The four stat slots are filled, in order, from the Notion Stats
+// table so the numbers can be refreshed each year without a code change.
 const COLLAGE: { offset: number; tiles: [Tile, Tile] }[] = [
   {
     offset: 32,
     tiles: [
-      { kind: 'stat', icon: Users, value: '6000+', label: 'Young Africans impacted' },
+      { kind: 'stat', statIndex: 0 },
       { kind: 'photo', src: '/bcp/collage-2.png' },
     ],
   },
@@ -93,13 +97,13 @@ const COLLAGE: { offset: number; tiles: [Tile, Tile] }[] = [
     offset: 0,
     tiles: [
       { kind: 'photo', src: '/bcp/collage-4.png' },
-      { kind: 'stat', icon: BriefcaseBusiness, value: '80%+', label: 'BCP alumni now work in leading organizations' },
+      { kind: 'stat', statIndex: 1 },
     ],
   },
   {
     offset: 24,
     tiles: [
-      { kind: 'stat', icon: Globe, value: '4', label: 'Countries reached (Nigeria, UK & more)' },
+      { kind: 'stat', statIndex: 2 },
       { kind: 'photo', src: '/bcp/collage-5.png' },
     ],
   },
@@ -114,15 +118,28 @@ const COLLAGE: { offset: number; tiles: [Tile, Tile] }[] = [
     offset: 56,
     tiles: [
       { kind: 'photo', src: '/bcp/collage-7.png' },
-      { kind: 'stat', icon: Speech, value: '60+', label: 'Speakers hosted since 2022' },
+      { kind: 'stat', statIndex: 3 },
     ],
   },
 ]
 
+// Icon names authors can choose from the Notion "Icon" select column
+const STAT_ICONS: Record<string, LucideIcon> = {
+  users: Users,
+  globe: Globe,
+  briefcase: BriefcaseBusiness,
+  speech: Speech,
+  award: Award,
+  building: Building2,
+  calendar: CalendarDays,
+  location: MapPin,
+  sparkles: Sparkles,
+}
+
 const TILE_SHADOW =
   'shadow-[0px_8px_8px_rgba(96,106,92,0.09),0px_2px_4px_rgba(96,106,92,0.1)]'
 
-function CollageTile({ tile }: { tile: Tile }) {
+function CollageTile({ tile, stats }: { tile: Tile; stats: Stat[] }) {
   if (tile.kind === 'photo') {
     return (
       <div className={`relative h-[207px] w-full border-[6px] border-[#2b3034] ${TILE_SHADOW}`}>
@@ -130,23 +147,33 @@ function CollageTile({ tile }: { tile: Tile }) {
       </div>
     )
   }
-  const Icon = tile.icon
+  const stat = stats[tile.statIndex]
+  // Fewer stats in Notion than slots in the collage: show a photo instead
+  if (!stat) {
+    return (
+      <div className={`relative h-[207px] w-full border-[6px] border-[#2b3034] ${TILE_SHADOW}`}>
+        <Image src="/bcp/collage-3.png" alt="BCP event" fill sizes="207px" className="object-cover" />
+      </div>
+    )
+  }
+  const Icon = STAT_ICONS[stat.icon] ?? Users
   return (
     <div
       className={`flex h-[212px] w-full flex-col items-center gap-2.5 border-[6px] border-black bg-[#fbfbfb] p-5 ${TILE_SHADOW}`}
     >
       <Icon className="size-[44px] text-[#2b3034]" strokeWidth={1.5} />
       <p className="text-center text-[32px] font-semibold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-        {tile.value}
+        {stat.value}
       </p>
       <p className="text-center text-[18px] tracking-[0.01em] text-[#828282] [font-family:var(--font-raleway)]">
-        {tile.label}
+        {stat.label}
       </p>
     </div>
   )
 }
 
-function EventsCollage() {
+async function EventsCollage() {
+  const stats = await getStats()
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[54px]">
       <img
@@ -167,8 +194,8 @@ function EventsCollage() {
         <div className="grid grid-cols-2 gap-6 pb-[56px] sm:grid-cols-3 lg:grid-cols-6">
           {COLLAGE.map(({ offset, tiles }, i) => (
             <div key={i} className="flex flex-col gap-6" style={{ transform: `translateY(${offset}px)` }}>
-              <CollageTile tile={tiles[0]} />
-              <CollageTile tile={tiles[1]} />
+              <CollageTile tile={tiles[0]} stats={stats} />
+              <CollageTile tile={tiles[1]} stats={stats} />
             </div>
           ))}
         </div>
@@ -225,7 +252,20 @@ function WhatIsBcp() {
 /* Upcoming Event                                                      */
 /* ------------------------------------------------------------------ */
 
-function UpcomingEvent() {
+/** "Lagos Edition  || October 2026" from a city and an ISO date. */
+export function formatEditionLine(city: string, date: string | null) {
+  const when = date
+    ? new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })
+    : ''
+  return [city && `${city} Edition`, when].filter(Boolean).join(' || ')
+}
+
+async function UpcomingEvent() {
+  const event = await getUpcomingFlagship()
   return (
     <section className="bg-[#fbfbfb] px-6 py-[18px] lg:px-[46px]">
       <div className="mx-auto flex max-w-[1348px] flex-col items-center gap-4 border-[6px] border-[#2b3034] px-6 py-10 text-center">
@@ -233,17 +273,17 @@ function UpcomingEvent() {
           Upcoming Event
         </h2>
         <p className="text-[32px] font-bold leading-[44.6px] text-[#80bfcf] [font-family:var(--font-hepta-slab)]">
-          BCP&rsquo;26
+          {event.title}
         </p>
         <p className="text-[52px] font-bold leading-[1.1] tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)] md:text-[96px]">
-          The Beginning of Tomorrow
+          {event.tagline}
         </p>
         <p className="text-[20px] font-medium text-[#2b3034] [font-family:var(--font-raleway)] md:text-[24px]">
-          Lagos Edition&ensp;|| October 2026
+          {formatEditionLine(event.city, event.date)}
         </p>
-        <button className="mt-4 flex h-[64px] items-center justify-center rounded-[3px] border-2 border-[#1f1f1f] bg-[#fed07b] px-5 text-[24px] font-bold leading-7 text-[#2b3034] shadow-[4px_4px_0px_#1f1f1f] transition-transform [font-family:var(--font-raleway)] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#1f1f1f]">
+        <BrutalButton href={event.url || REGISTER_MAILTO} className="mt-4 h-[64px] text-[24px]">
           Register
-        </button>
+        </BrutalButton>
       </div>
     </section>
   )
@@ -252,24 +292,6 @@ function UpcomingEvent() {
 /* ------------------------------------------------------------------ */
 /* Testimonials                                                        */
 /* ------------------------------------------------------------------ */
-
-const TESTIMONIALS = [
-  {
-    quote: '“BCP changed how I think about career growth and gave me the clarity I needed.',
-    name: 'Toluwase Olugbemiro',
-    role: 'BCP Alumni',
-  },
-  {
-    quote: '“BCP changed how I think about career growth and gave me the clarity I needed.',
-    name: 'Toluwase Olugbemiro',
-    role: 'BCP Alumni',
-  },
-  {
-    quote: '“BCP changed how I think about career growth and gave me the clarity I needed.',
-    name: 'Toluwase Olugbemiro',
-    role: 'BCP Alumni',
-  },
-]
 
 // Repeated words alternate teal/gold along each arc, as in the Figma text-paths
 function WatermarkText({ pathId, count = 6 }: { pathId: string; count?: number }) {
@@ -323,7 +345,8 @@ function TestimonialWatermark() {
   )
 }
 
-function Testimonials() {
+async function Testimonials() {
+  const testimonials = await getTestimonials()
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[90px]">
       <TestimonialWatermark />
@@ -332,18 +355,21 @@ function Testimonials() {
           Testimonials
         </h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
+          {testimonials.map((t) => (
             <div
-              key={i}
+              key={t.id}
               className="flex flex-col gap-2.5 border-4 border-[#2b3034] bg-[#fbfbfb] p-5 shadow-[0px_8px_4px_rgba(96,106,92,0.09),0px_2px_2px_rgba(96,106,92,0.1)]"
             >
               <Image src="/bcp/quote.png" alt="" width={48} height={48} aria-hidden />
               <p className="text-[22px] tracking-[0.01em] text-[#828282] [font-family:var(--font-raleway)] md:text-[24px]">
-                {t.quote}
+                &ldquo;{t.quote}&rdquo;
               </p>
               <div className="mt-2 flex items-start gap-1.5">
-                <span className="relative size-[48px] overflow-hidden rounded-full border-2 border-black bg-[#e5e7eb]">
-                  <Image src="/bcp/testimonial-avatar.png" alt={t.name} fill sizes="48px" className="object-contain" />
+                {/* Notion file URLs are short-lived signed links, so these
+                    portraits use a plain img rather than next/image */}
+                <span className="relative size-[48px] shrink-0 overflow-hidden rounded-full border-2 border-black bg-[#e5e7eb]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={t.photo} alt={t.name} className="size-full object-cover" />
                 </span>
                 <span className="flex flex-col gap-[7px] text-[18px] tracking-[0.01em] text-[#828282] [font-family:var(--font-raleway)]">
                   <span className="font-semibold">{t.name}</span>
@@ -362,32 +388,8 @@ function Testimonials() {
 /* Partners — marquee rows                                             */
 /* ------------------------------------------------------------------ */
 
-const PARTNER_LOGOS = [
-  '/bcp/partner-1.png',
-  '/bcp/partner-2.png',
-  '/bcp/partner-3.png',
-  '/bcp/partner-4.png',
-  '/bcp/partner-5.png',
-  '/bcp/partner-6.png',
-]
-
-function MarqueeRow({ reverse = false }: { reverse?: boolean }) {
-  // Content duplicated so the -50% translate loops seamlessly
-  const logos = [...PARTNER_LOGOS, ...PARTNER_LOGOS]
-  return (
-    <div className="bcp-marquee-row overflow-hidden">
-      <div className={`bcp-marquee flex w-max gap-[27px] ${reverse ? 'bcp-marquee-reverse' : ''}`}>
-        {logos.map((src, i) => (
-          <div key={i} className="flex h-[129px] w-[180px] items-center justify-center bg-[#ebe8e3]">
-            <Image src={src} alt="Partner logo" width={120} height={86} className="object-contain" />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function Partners() {
+async function Partners() {
+  const partners = await getPartners()
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[60px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-14 px-6 lg:flex-row lg:items-start lg:gap-0 lg:px-[110px]">
@@ -408,14 +410,15 @@ function Partners() {
             We started in Akure, Nigeria, in 2022 with 120 attendees, and today, BCP spans multiple
             cities and countries, bridging the talent gap across Africa.
           </p>
-          <button className="mt-6 flex h-[76px] w-[206px] items-center justify-center rounded-[3px] border-2 border-[#1f1f1f] bg-[#fed07b] px-5 text-[16.4px] font-bold tracking-[0.01em] text-[#2b3034] shadow-[4px_4px_0px_#1f1f1f] transition-transform [font-family:var(--font-raleway)] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#1f1f1f]">
+          <BrutalButton
+            href="/partners#partnership-inquiry"
+            className="mt-6 h-[76px] w-[206px] text-[16.4px] tracking-[0.01em]"
+          >
             Partner with Us
-          </button>
+          </BrutalButton>
         </div>
-        <div className="relative flex flex-col gap-[25px] lg:w-[45%]">
-          <MarqueeRow />
-          <MarqueeRow reverse />
-          <MarqueeRow />
+        <div className="relative lg:w-[45%]">
+          <PartnerMarquee partners={partners} />
           {/* White fade so logos appear to emerge from the text side, as in Figma */}
           <div
             aria-hidden

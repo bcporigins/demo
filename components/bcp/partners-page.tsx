@@ -1,6 +1,10 @@
 import Image from 'next/image'
-import { ArrowRight, ChevronDown } from 'lucide-react'
-import { BcpHero, BrutalButton, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
+import { BcpHero, JoinCommunity, BcpFooter, isExternal } from '@/components/bcp/ui'
+import { PartnerMarquee } from '@/components/bcp/partner-marquee'
+import { PartnershipForm } from '@/components/bcp/partnership-form'
+import { getPartners, getPartnershipTypes, getPostsByType } from '@/lib/notion'
 
 /* ------------------------------------------------------------------ */
 /* Why partner — numbered benefits + overlapping photos                */
@@ -85,31 +89,8 @@ function NumberedBenefits() {
 /* Our partners — logo marquee (same treatment as the home page)      */
 /* ------------------------------------------------------------------ */
 
-const PARTNER_LOGOS = [
-  '/bcp/partner-1.png',
-  '/bcp/partner-2.png',
-  '/bcp/partner-3.png',
-  '/bcp/partner-4.png',
-  '/bcp/partner-5.png',
-  '/bcp/partner-6.png',
-]
-
-function MarqueeRow({ reverse = false }: { reverse?: boolean }) {
-  const logos = [...PARTNER_LOGOS, ...PARTNER_LOGOS]
-  return (
-    <div className="bcp-marquee-row overflow-hidden">
-      <div className={`bcp-marquee flex w-max gap-[27px] ${reverse ? 'bcp-marquee-reverse' : ''}`}>
-        {logos.map((src, i) => (
-          <div key={i} className="flex h-[129px] w-[180px] items-center justify-center bg-[#ebe8e3]">
-            <Image src={src} alt="Partner logo" width={120} height={86} className="object-contain" />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function OurPartners() {
+async function OurPartners() {
+  const partners = await getPartners()
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[60px]">
       <img
@@ -122,11 +103,10 @@ function OurPartners() {
         <h2 className="text-center text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
           Our partners
         </h2>
-        <div className="relative flex flex-col gap-[25px] bg-white py-2 shadow-[inset_0px_0px_50px_0px_rgba(255,255,255,0.81)]">
-          <MarqueeRow />
-          <MarqueeRow reverse />
-          <MarqueeRow />
-        </div>
+        <PartnerMarquee
+          partners={partners}
+          className="relative bg-white py-2 shadow-[inset_0px_0px_50px_0px_rgba(255,255,255,0.81)]"
+        />
       </div>
     </section>
   )
@@ -136,30 +116,8 @@ function OurPartners() {
 /* Find the right partnership                                          */
 /* ------------------------------------------------------------------ */
 
-const PARTNERSHIPS = [
-  {
-    title: 'Event Sponsorship',
-    body: 'Align your brand with our flagship events, conferences, and hackathons.',
-  },
-  {
-    title: 'Community Sponsorship',
-    body: 'Gain year round visibility and engagement as a key supporter of the BCP community.',
-  },
-  {
-    title: 'Corporate Talent Development',
-    body: 'Custom programs to upskill your team or build a bespoke talent pipeline.',
-  },
-  {
-    title: 'Venue/ logistics Partnerships',
-    body: 'Custom programs to upskill your team or build a bespoke talent pipeline.',
-  },
-  {
-    title: 'Corporate Talent Development Programs',
-    body: 'Custom programs to upskill your team or build a bespoke talent pipeline.',
-  },
-]
-
-function FindPartnership() {
+async function FindPartnership() {
+  const partnerships = await getPartnershipTypes()
   return (
     <section className="bg-[#fbfbfb] py-[55px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[75px]">
@@ -168,9 +126,9 @@ function FindPartnership() {
         </h2>
         {/* The 5th card runs off-canvas in the design — horizontal scroll row */}
         <div className="flex gap-10 overflow-x-auto px-6 pb-4 lg:px-[87px]">
-          {PARTNERSHIPS.map(({ title, body }) => (
+          {partnerships.map(({ id, title, body, url }) => (
             <div
-              key={title}
+              key={id}
               className="flex min-h-[265px] w-[290px] shrink-0 flex-col justify-center gap-3.5 border-[6px] border-[#2b3034] bg-[#fbfbfb] px-[33px] py-6"
             >
               <h3 className="text-[20px] font-semibold leading-7 text-[#2b3034] [font-family:var(--font-hepta-slab)]">
@@ -179,12 +137,25 @@ function FindPartnership() {
               <p className="text-[18px] leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
                 {body}
               </p>
-              <a
-                href="#"
-                className="flex items-center gap-1 text-[18px] text-[#1c75bc] [font-family:var(--font-raleway)] hover:underline"
-              >
-                Read More <ArrowRight className="size-4" />
-              </a>
+              {/* "URL" in the Notion Partnerships table — usually the public
+                  Notion page describing that tier. With none set, the card
+                  points at the enquiry form rather than a dead anchor. */}
+              {url ? (
+                <a
+                  href={url}
+                  {...(isExternal(url) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  className="flex items-center gap-1 text-[18px] text-[#1c75bc] [font-family:var(--font-raleway)] hover:underline"
+                >
+                  Read More <ArrowRight className="size-4" />
+                </a>
+              ) : (
+                <Link
+                  href="#partnership-inquiry"
+                  className="flex items-center gap-1 text-[18px] text-[#1c75bc] [font-family:var(--font-raleway)] hover:underline"
+                >
+                  Enquire <ArrowRight className="size-4" />
+                </Link>
+              )}
             </div>
           ))}
         </div>
@@ -197,22 +168,41 @@ function FindPartnership() {
 /* Our impact in action                                                */
 /* ------------------------------------------------------------------ */
 
-const IMPACT_CARDS = [
+/** Shown until the Notion blog has posts of type "Impact Story". The photos
+ *  are existing event shots so the section never renders empty grey boxes. */
+const FALLBACK_IMPACT = [
   {
-    title: 'BCP Akure- Talent Pipeline Success',
+    slug: null,
+    cover: '/bcp/partner-photo-1.png',
+    title: 'BCP Akure — Talent Pipeline Success',
     body: 'How we connected a leading fintech with 15 top-tier software engineers.',
   },
   {
-    title: 'BCP Lagos- Corporate Collaboration Impact',
+    slug: null,
+    cover: '/bcp/partner-photo-2.png',
+    title: 'BCP Lagos — Corporate Collaboration Impact',
     body: 'A deep dive into our innovation workshop series with a multinational corporation.',
   },
   {
-    title: 'AI In the modern workspace',
-    body: 'Showcasing our first international chapter launch and it’s success stories.',
+    slug: null,
+    cover: '/bcp/what-is-bcp.png',
+    title: 'AI in the Modern Workspace',
+    body: 'Showcasing our first international chapter launch and its success stories.',
   },
 ]
 
-function ImpactInAction() {
+async function ImpactInAction() {
+  const posts = await getPostsByType('Impact Story')
+  const cards =
+    posts.length > 0
+      ? posts.map((post) => ({
+          slug: post.slug,
+          cover: post.cover,
+          title: post.title,
+          body: post.excerpt,
+        }))
+      : FALLBACK_IMPACT
+
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[55px]">
       <img
@@ -222,24 +212,52 @@ function ImpactInAction() {
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-50"
       />
       <div className="relative mx-auto flex max-w-[1440px] flex-col gap-[65px] px-6 lg:px-[110px]">
-        <h2 className="text-center text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-          Our impact in action
-        </h2>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <h2 className="text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
+            Our impact in action
+          </h2>
+          <p className="max-w-[760px] text-[18px] leading-7 text-[#414141] [font-family:var(--font-raleway)]">
+            What partnering with BCP actually produces — the hires made, the programmes run, and
+            the chapters opened with the organisations backing us.
+          </p>
+        </div>
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
-          {IMPACT_CARDS.map(({ title, body }) => (
-            <article
-              key={title}
-              className="flex flex-col border-[6px] border-[#2b3034] bg-[#fbfbfb] p-5 shadow-[0px_18px_40px_rgba(0,0,0,0.22)]"
-            >
-              <div className="h-[215px] w-full bg-[#d9d9d9]" />
-              <h3 className="mt-4 text-[20px] font-semibold capitalize leading-7 text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-                {title}
-              </h3>
-              <p className="mt-2 text-[16px] leading-[27px] text-[#231f20] [font-family:var(--font-raleway)]">
-                {body}
-              </p>
-            </article>
-          ))}
+          {cards.map(({ slug, cover, title, body }) => {
+            const card = (
+              <>
+                {cover ? (
+                  // Notion covers are short-lived signed URLs; plain img avoids
+                  // next/image caching a link that expires
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={cover} alt={title} className="h-[215px] w-full object-cover" />
+                ) : (
+                  <div className="h-[215px] w-full bg-[#d9d9d9]" />
+                )}
+                <h3 className="mt-4 text-[20px] font-semibold leading-7 text-[#2b3034] [font-family:var(--font-hepta-slab)]">
+                  {title}
+                </h3>
+                <p className="mt-2 text-[16px] leading-[27px] text-[#231f20] [font-family:var(--font-raleway)]">
+                  {body}
+                </p>
+                {slug && (
+                  <span className="mt-4 flex items-center gap-1 text-[18px] text-[#1c75bc] [font-family:var(--font-raleway)] group-hover:underline">
+                    Read the case study <ArrowRight className="size-4" />
+                  </span>
+                )}
+              </>
+            )
+            const shell =
+              'group flex flex-col border-[6px] border-[#2b3034] bg-[#fbfbfb] p-5 shadow-[0px_18px_40px_rgba(0,0,0,0.22)]'
+            return slug ? (
+              <Link key={title} href={`/blog/${slug}`} className={shell}>
+                {card}
+              </Link>
+            ) : (
+              <article key={title} className={shell}>
+                {card}
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -250,20 +268,10 @@ function ImpactInAction() {
 /* Let's Build Together — inquiry form                                 */
 /* ------------------------------------------------------------------ */
 
-const FIELD_CLASSES =
-  'w-full rounded-[3px] border-2 border-[#1f1f1f] bg-[#fefefe] px-6 text-[14px] leading-5 text-[#2f363d] shadow-[4px_4px_0px_0px_#1f1f1f] [font-family:var(--font-raleway)] placeholder:text-[#9aa1a7] focus:outline-none focus:ring-2 focus:ring-[#fed07b]'
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
+async function BuildTogether() {
+  const partnerships = await getPartnershipTypes()
   return (
-    <span className="text-[20px] font-semibold leading-[27px] text-[#2b3034] [font-family:var(--font-raleway)]">
-      {children}
-    </span>
-  )
-}
-
-function BuildTogether() {
-  return (
-    <section className="bg-[#fbfbfb] pb-[89px]">
+    <section id="partnership-inquiry" className="scroll-mt-24 bg-[#fbfbfb] pb-[89px]">
       <div className="mx-auto flex max-w-[859px] flex-col items-center gap-10 p-6 shadow-[0px_1px_1px_rgba(0,0,0,0.3),0px_2px_3px_rgba(0,0,0,0.15)] md:p-10">
         <div className="flex flex-col text-center">
           <h2 className="text-[36px] font-semibold leading-[48px] text-[#121212] [font-family:var(--font-hepta-slab)]">
@@ -273,44 +281,7 @@ function BuildTogether() {
             Have a question or want to discuss a partnership? Fill out the form below
           </p>
         </div>
-        <form className="flex w-full flex-col gap-5 px-2.5">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <label className="flex flex-1 flex-col gap-1">
-                <FieldLabel>Name</FieldLabel>
-                <input type="text" placeholder="Your name" className={`h-[50px] ${FIELD_CLASSES}`} />
-              </label>
-              <label className="flex flex-1 flex-col gap-1">
-                <FieldLabel>Organization</FieldLabel>
-                <input type="text" placeholder="Your organization" className={`h-[50px] ${FIELD_CLASSES}`} />
-              </label>
-            </div>
-            <label className="flex flex-col gap-1">
-              <FieldLabel>Type of partnership</FieldLabel>
-              <span className="relative">
-                <select className={`h-[50px] appearance-none pr-12 ${FIELD_CLASSES}`} defaultValue="">
-                  <option value="" disabled>
-                    Select a partnership type
-                  </option>
-                  {PARTNERSHIPS.slice(0, 4).map(({ title }) => (
-                    <option key={title} value={title}>
-                      {title}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-5 top-1/2 size-4 -translate-y-1/2 text-[#2f363d]" />
-              </span>
-            </label>
-            <label className="flex flex-col gap-1">
-              <FieldLabel>Message</FieldLabel>
-              <textarea
-                placeholder="Type your message"
-                className={`h-[120px] resize-none py-2.5 text-[18px] leading-[27px] ${FIELD_CLASSES}`}
-              />
-            </label>
-          </div>
-          <BrutalButton className="h-[60px] w-full">Submit Inquiry</BrutalButton>
-        </form>
+        <PartnershipForm partnershipTypes={partnerships.map(({ title }) => title)} />
       </div>
     </section>
   )

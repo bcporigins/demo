@@ -1,14 +1,17 @@
-import Image from 'next/image'
-import { BcpHero, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import { Youtube } from 'lucide-react'
+import { BcpHero, BrutalButton, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
 import { VideoHighlights } from '@/components/bcp/video-highlights'
+import { RecapCard } from '@/components/bcp/recap-card'
 import { GalleryCollage } from '@/components/bcp/gallery-collage'
-import { getGalleryEditions } from '@/lib/notion'
+import { getGalleryEditions, getVideos } from '@/lib/notion'
+import { YOUTUBE_CHANNEL } from '@/lib/site'
 
 /* ------------------------------------------------------------------ */
 /* Video Highlights                                                    */
 /* ------------------------------------------------------------------ */
 
-function VideoHighlightsSection() {
+async function VideoHighlightsSection() {
+  const videos = await getVideos('Highlight')
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[37px]">
       <img
@@ -18,10 +21,15 @@ function VideoHighlightsSection() {
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-50"
       />
       <div className="relative mx-auto flex max-w-[1440px] flex-col gap-[45px] px-6 lg:px-[73px]">
-        <h2 className="text-[36px] font-bold text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-          Video Highlights
-        </h2>
-        <VideoHighlights />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-[36px] font-bold text-[#2b3034] [font-family:var(--font-hepta-slab)]">
+            Video Highlights
+          </h2>
+          <BrutalButton href={YOUTUBE_CHANNEL} variant="beige" className="gap-2.5 text-[16px]">
+            <Youtube className="size-5" strokeWidth={1.75} /> Our YouTube channel
+          </BrutalButton>
+        </div>
+        <VideoHighlights videos={videos} />
       </div>
     </section>
   )
@@ -31,13 +39,11 @@ function VideoHighlightsSection() {
 /* Event Recaps                                                        */
 /* ------------------------------------------------------------------ */
 
-const RECAPS = [
-  { title: 'BCP’25 Akure', location: 'Akure', bg: '#91bd86', photo: '/bcp/recap-akure.png' },
-  { title: 'BCP’25 Kaduna', location: 'Kaduna', bg: '#a3d0d9', photo: '/bcp/recap-kaduna.png' },
-  { title: 'BCP’25 Calabar', location: 'Calabar', bg: '#d6924d', photo: '/bcp/partner-photo-2.png' },
-]
+// Card backgrounds cycle through the BCP palette in the order set in Figma
+const RECAP_BACKGROUNDS = ['#91bd86', '#a3d0d9', '#d6924d']
 
-function EventRecaps() {
+async function EventRecaps() {
+  const recaps = await getVideos('Recap')
   return (
     <section className="bg-[#fbfbfb] py-[50px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[45px] px-6 lg:px-[73px]">
@@ -45,35 +51,12 @@ function EventRecaps() {
           Event Recaps
         </h2>
         <div className="grid grid-cols-1 gap-9 px-0 md:grid-cols-3 lg:px-[18px]">
-          {RECAPS.map(({ title, location, bg, photo }) => (
-            <div
-              key={title}
-              className="flex flex-col border-[6px] border-[#2b3034] p-[25px]"
-              style={{ backgroundColor: bg }}
-            >
-              <div className="relative h-[416px] w-full">
-                <Image src={photo} alt={`${title} recap video`} fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover" />
-                <div className="absolute inset-0 bg-[rgba(43,48,52,0.4)]" />
-                {/* Corner location tag */}
-                <span className="absolute right-0 top-0 flex h-[41px] w-[116px] items-center justify-center rounded-bl-[20px] bg-[#f5c256] px-2.5 py-[5px] text-[24px] font-medium leading-[30px] text-white [font-family:var(--font-hepta-slab)]">
-                  {location}
-                </span>
-                {/* Play icon */}
-                <button
-                  type="button"
-                  aria-label={`Play ${title} recap`}
-                  className="absolute left-1/2 top-1/2 size-[138px] -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-105"
-                >
-                  <img src="/bcp/play-icon.svg" alt="" className="size-full" />
-                </button>
-              </div>
-              <div className="mt-4 flex flex-col gap-1">
-                <p className="text-[24px] font-medium leading-[30px] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-                  {title}
-                </p>
-                <p className="text-[24px] text-[#2b3034] [font-family:var(--font-raleway)]">Recap</p>
-              </div>
-            </div>
+          {recaps.map((video, i) => (
+            <RecapCard
+              key={video.id}
+              video={video}
+              background={RECAP_BACKGROUNDS[i % RECAP_BACKGROUNDS.length]}
+            />
           ))}
         </div>
       </div>

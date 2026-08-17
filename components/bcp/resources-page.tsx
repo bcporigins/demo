@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Download, ArrowRight } from 'lucide-react'
 import { BcpHero, BrutalButton, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
-import { getPosts } from '@/lib/notion'
+import { getPosts, getResourceLinks } from '@/lib/notion'
 
 /* ------------------------------------------------------------------ */
 /* Blog                                                                */
@@ -10,7 +10,7 @@ import { getPosts } from '@/lib/notion'
 async function Blog() {
   const posts = await getPosts()
   return (
-    <section className="bg-[#fbfbfb] pt-[65px]">
+    <section id="blog" className="scroll-mt-24 bg-[#fbfbfb] pt-[65px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[25px] px-6 lg:px-[79px]">
         <h2 className="text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
           Blog
@@ -133,14 +133,18 @@ function ResearchInsights() {
 /* Downloads                                                           */
 /* ------------------------------------------------------------------ */
 
-const DOWNLOADS = [
-  { label: 'Toolkit', title: 'Event Toolkits' },
-  { label: 'Assets', title: 'Presentation Decks' },
-  { label: 'Guide', title: 'Learning Guides' },
-  { label: 'Templates', title: 'CV & Cover Letters' },
+// Shown until the Notion Resources table has rows in the "Download" group.
+// Each card advertises what is coming rather than offering a dead button.
+const FALLBACK_DOWNLOADS = [
+  { id: 'fd-1', description: 'Toolkit', label: 'Event Toolkits', url: '' },
+  { id: 'fd-2', description: 'Assets', label: 'Presentation Decks', url: '' },
+  { id: 'fd-3', description: 'Guide', label: 'Learning Guides', url: '' },
+  { id: 'fd-4', description: 'Templates', label: 'CV & Cover Letters', url: '' },
 ]
 
-function Downloads() {
+async function Downloads() {
+  const fromNotion = await getResourceLinks('Download')
+  const downloads = fromNotion.length > 0 ? fromNotion : FALLBACK_DOWNLOADS
   return (
     <section className="bg-[#fbfbfb] pt-[100px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-[65px] px-6 lg:px-[79px]">
@@ -148,20 +152,26 @@ function Downloads() {
           Downloads
         </h2>
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {DOWNLOADS.map(({ label, title }) => (
+          {downloads.map(({ id, label, description, url }) => (
             <div
-              key={title}
+              key={id}
               className="flex flex-col justify-center gap-3.5 border-[6px] border-[#2b3034] bg-[#fbfbfb] px-[33px] py-6"
             >
               <p className="text-[18px] leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
-                {label}
+                {description || 'Resource'}
               </p>
               <h3 className="text-[20px] font-semibold leading-7 text-[#2b3034] [font-family:var(--font-hepta-slab)]">
-                {title}
+                {label}
               </h3>
-              <BrutalButton className="h-[60px] w-full max-w-[232px] gap-2.5">
-                <Download className="size-6" strokeWidth={2} /> Download
-              </BrutalButton>
+              {url ? (
+                <BrutalButton href={url} className="h-[60px] w-full max-w-[232px] gap-2.5">
+                  <Download className="size-6" strokeWidth={2} /> Download
+                </BrutalButton>
+              ) : (
+                <span className="flex h-[60px] w-full max-w-[232px] items-center justify-center rounded-[3px] border-2 border-dashed border-[#9aa1a7] px-5 text-[16px] font-semibold text-[#5f5f64] [font-family:var(--font-raleway)]">
+                  Coming soon
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -174,7 +184,15 @@ function Downloads() {
 /* Media Kit & Press                                                   */
 /* ------------------------------------------------------------------ */
 
-function MediaKit() {
+// The PNG logo ships with the site; the SVG and brand guidelines appear once
+// they are added to the Notion Resources table under the "Media Kit" group.
+const FALLBACK_MEDIA_KIT = [
+  { id: 'fmk-1', label: 'PNG format', description: '', url: '/bcp/logo.png' },
+]
+
+async function MediaKit() {
+  const fromNotion = await getResourceLinks('Media Kit')
+  const assets = fromNotion.length > 0 ? fromNotion : FALLBACK_MEDIA_KIT
   return (
     <section className="bg-[#fbfbfb] py-[78px]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-6 lg:px-[79px]">
@@ -197,13 +215,16 @@ function MediaKit() {
             Logo Downloads
           </p>
           <div className="flex flex-col gap-6 md:flex-row md:gap-[52px]">
-            <BrutalButton variant="beige" className="h-[64px] flex-1">
-              PNG format
-            </BrutalButton>
-            <BrutalButton variant="beige" className="h-[64px] flex-1">
-              SVG format
-            </BrutalButton>
-            <BrutalButton className="h-[64px] flex-1">Brand guidelines</BrutalButton>
+            {assets.map(({ id, label, url }, i) => (
+              <BrutalButton
+                key={id}
+                href={url}
+                variant={i === assets.length - 1 && assets.length > 1 ? 'yellow' : 'beige'}
+                className="h-[64px] flex-1 gap-2.5"
+              >
+                <Download className="size-5" strokeWidth={2} /> {label}
+              </BrutalButton>
+            ))}
           </div>
         </div>
       </div>

@@ -1,43 +1,58 @@
-import Image from 'next/image'
 import { Linkedin } from 'lucide-react'
 import { BcpHero, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
+import { PartnerGrid } from '@/components/bcp/partner-marquee'
+import { getPeople, getPartners, type Person } from '@/lib/notion'
 
 /* ------------------------------------------------------------------ */
 /* Flip card — photo front, dark bio back, spins on hover              */
+/*                                                                     */
+/* Name, role, bio, portrait, and LinkedIn all come from the Notion    */
+/* People table so the roster can be edited without a deploy.          */
 /* ------------------------------------------------------------------ */
 
-type Member = { name: string; bio: string; photo: string }
+function TeamFlipCard({ member }: { member: Person }) {
+  // Portraits uploaded to Notion are served from short-lived signed URLs,
+  // so they use a plain img rather than next/image
+  const linkedInIcon = member.linkedin ? (
+    <a
+      href={member.linkedin}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${member.name} on LinkedIn`}
+      className="shrink-0 transition-opacity hover:opacity-70"
+    >
+      <Linkedin className="size-5 text-white" />
+    </a>
+  ) : null
 
-const DEFAULT_BIO =
-  'Dedicated individuals working to empower the next generation of African Leaders.'
-
-function TeamFlipCard({ member }: { member: Member }) {
   return (
     <div className="group aspect-square w-full [perspective:1000px]">
       <div className="relative size-full transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
         {/* Front: photo */}
         <div className="absolute inset-0 overflow-hidden border-[6px] border-[#2b3034] [backface-visibility:hidden]">
-          <Image
-            src={member.photo}
-            alt={member.name}
-            fill
-            sizes="(min-width: 1024px) 250px, 50vw"
-            className="object-cover"
-          />
-          <Linkedin className="absolute right-[13px] top-[13px] size-5 text-white" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={member.photo} alt={member.name} className="size-full object-cover" />
+          {linkedInIcon && <span className="absolute right-[13px] top-[13px]">{linkedInIcon}</span>}
           <span className="absolute bottom-[9px] left-[10px] p-2.5 text-[20px] font-medium text-white backdrop-blur-[2px] [font-family:var(--font-raleway)]">
             {member.name}
           </span>
         </div>
         {/* Back: dark bio card */}
-        <div className="absolute inset-0 flex flex-col justify-between border-[6px] border-[#2b3034] bg-[#2b3034] p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+        <div className="absolute inset-0 flex flex-col justify-between gap-2 border-[6px] border-[#2b3034] bg-[#2b3034] p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
           <div className="flex items-start justify-between gap-2">
-            <p className="max-w-[170px] text-[20px] font-medium leading-tight text-white [font-family:var(--font-raleway)]">
-              {member.name}
-            </p>
-            <Linkedin className="size-5 shrink-0 text-white" />
+            <span className="flex flex-col">
+              <span className="text-[19px] font-medium leading-tight text-white [font-family:var(--font-raleway)]">
+                {member.name}
+              </span>
+              {member.role && (
+                <span className="mt-1 text-[13px] leading-tight text-[#fed07b] [font-family:var(--font-raleway)]">
+                  {member.role}
+                </span>
+              )}
+            </span>
+            {linkedInIcon}
           </div>
-          <p className="max-w-[181px] text-[13px] leading-4 text-[#d6d6d6] [font-family:var(--font-raleway)]">
+          <p className="line-clamp-[9] text-[13px] leading-[1.45] text-[#d6d6d6] [font-family:var(--font-raleway)]">
             {member.bio}
           </p>
         </div>
@@ -49,18 +64,6 @@ function TeamFlipCard({ member }: { member: Member }) {
 /* ------------------------------------------------------------------ */
 /* Sections                                                            */
 /* ------------------------------------------------------------------ */
-
-const CORE_TEAM: Member[] = Array.from({ length: 15 }).map(() => ({
-  name: 'Toluwase Olugbemiro',
-  bio: DEFAULT_BIO,
-  photo: '/bcp/core-values-photo.png',
-}))
-
-const REGIONAL_HOSTS: Member[] = Array.from({ length: 6 }).map(() => ({
-  name: 'Toluwase Olugbemiro',
-  bio: DEFAULT_BIO,
-  photo: '/bcp/core-values-photo.png',
-}))
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -75,10 +78,9 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
   )
 }
 
-const TEAM_SUBTITLE =
-  'Our leadership team brings together expertise in youth development, program management, and community building.'
-
-function CoreTeam() {
+async function CoreTeam() {
+  const members = await getPeople('Core Team')
+  if (members.length === 0) return null
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[62px]">
       <img
@@ -88,10 +90,13 @@ function CoreTeam() {
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-40"
       />
       <div className="relative mx-auto flex max-w-[1078px] flex-col gap-[60px] px-6 lg:px-0">
-        <SectionHeader title="Core Team" subtitle={TEAM_SUBTITLE} />
+        <SectionHeader
+          title="Core Team"
+          subtitle="Our leadership team brings together expertise in youth development, program management, and community building."
+        />
         <div className="grid grid-cols-2 gap-[26px] sm:grid-cols-3 lg:grid-cols-4">
-          {CORE_TEAM.map((member, i) => (
-            <TeamFlipCard key={i} member={member} />
+          {members.map((member) => (
+            <TeamFlipCard key={member.id} member={member} />
           ))}
         </div>
       </div>
@@ -99,14 +104,19 @@ function CoreTeam() {
   )
 }
 
-function RegionalHosts() {
+async function RegionalHosts() {
+  const members = await getPeople('Regional Host')
+  if (members.length === 0) return null
   return (
     <section className="bg-[#fbfbfb] py-[62px]">
       <div className="mx-auto flex max-w-[802px] flex-col gap-[80px] px-6 lg:px-0">
-        <SectionHeader title="Meet Our Regional Hosts" subtitle={TEAM_SUBTITLE} />
+        <SectionHeader
+          title="Meet Our Regional Hosts"
+          subtitle="The community leaders who bring the BCP Origins experience to their own cities."
+        />
         <div className="grid grid-cols-2 gap-[26px] sm:grid-cols-3">
-          {REGIONAL_HOSTS.map((member, i) => (
-            <TeamFlipCard key={i} member={member} />
+          {members.map((member) => (
+            <TeamFlipCard key={member.id} member={member} />
           ))}
         </div>
       </div>
@@ -114,22 +124,36 @@ function RegionalHosts() {
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* Advisors & Partners                                                 */
-/* ------------------------------------------------------------------ */
-
-const PARTNER_ROW_1 = ['/bcp/partner-1.png', '/bcp/partner-2.png', '/bcp/partner-3.png', '/bcp/partner-4.png']
-const PARTNER_ROW_2 = ['/bcp/partner-5.png', '/bcp/partner-6.png', '/bcp/partner-3.png']
-
-function LogoTile({ src }: { src: string }) {
+/** Community ambassadors (COAs). Hidden until the Notion table has rows,
+ *  so an empty roster never leaves a headed but blank section on the page. */
+async function CommunityAmbassadors() {
+  const members = await getPeople('Community Ambassador')
+  if (members.length === 0) return null
   return (
-    <div className="flex h-[129px] w-[180px] items-center justify-center bg-[#ebe8e3]">
-      <Image src={src} alt="Partner logo" width={120} height={86} className="object-contain" />
-    </div>
+    <section className="relative overflow-hidden bg-[#fbfbfb] py-[62px]">
+      <img
+        src="/bcp/wave-2.svg"
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute inset-0 size-full object-cover opacity-40"
+      />
+      <div className="relative mx-auto flex max-w-[1078px] flex-col gap-[60px] px-6 lg:px-0">
+        <SectionHeader
+          title="Community Ambassadors"
+          subtitle="Our COAs represent BCP on their campuses and in their cities, opening doors for the people around them."
+        />
+        <div className="grid grid-cols-2 gap-[26px] sm:grid-cols-3 lg:grid-cols-4">
+          {members.map((member) => (
+            <TeamFlipCard key={member.id} member={member} />
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
-function AdvisorsPartners() {
+async function AdvisorsPartners() {
+  const [advisors, partners] = await Promise.all([getPeople('Advisor'), getPartners()])
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[62px]">
       <img
@@ -139,19 +163,18 @@ function AdvisorsPartners() {
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-50"
       />
       <div className="relative mx-auto flex max-w-[1440px] flex-col items-center gap-[60px] px-6">
-        <SectionHeader title="Advisors & Partners" subtitle={TEAM_SUBTITLE} />
-        <div className="flex flex-col items-center gap-[25px]">
-          <div className="flex flex-wrap justify-center gap-[27px]">
-            {PARTNER_ROW_1.map((src, i) => (
-              <LogoTile key={i} src={src} />
+        <SectionHeader
+          title="Advisors & Partners"
+          subtitle="The advisors and organisations backing the work, from programme design to venues, funding, and reach."
+        />
+        {advisors.length > 0 && (
+          <div className="grid w-full max-w-[1078px] grid-cols-2 gap-[26px] sm:grid-cols-3 lg:grid-cols-4">
+            {advisors.map((advisor) => (
+              <TeamFlipCard key={advisor.id} member={advisor} />
             ))}
           </div>
-          <div className="flex flex-wrap justify-center gap-[27px]">
-            {PARTNER_ROW_2.map((src, i) => (
-              <LogoTile key={i} src={src} />
-            ))}
-          </div>
-        </div>
+        )}
+        <PartnerGrid partners={partners} />
       </div>
     </section>
   )
@@ -169,6 +192,7 @@ export function BcpTeamPage() {
       />
       <CoreTeam />
       <RegionalHosts />
+      <CommunityAmbassadors />
       <AdvisorsPartners />
       <JoinCommunity />
       <BcpFooter />
