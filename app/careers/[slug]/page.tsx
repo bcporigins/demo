@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { articleMetadata } from '@/lib/seo'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, MapPin, Clock, Tag } from 'lucide-react'
@@ -20,11 +21,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const result = await getRoleBySlug(slug)
-  if (!result) return { title: 'Careers | BCP' }
-  return {
-    title: `${result.role.title} | Careers | BCP`,
-    description: result.role.summary || undefined,
-  }
+  if (!result) return { title: 'Careers' }
+  return articleMetadata({
+    title: `${result.role.title} — Careers`,
+    description: result.role.summary,
+    path: `/careers/${slug}`,
+    publishedTime: result.role.date,
+  })
 }
 
 function MetaChip({ icon: Icon, label }: { icon: typeof MapPin; label: string }) {

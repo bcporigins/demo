@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { articleMetadata } from '@/lib/seo'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BcpHero, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
@@ -21,11 +22,14 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const result = await getPostBySlug(slug)
-  if (!result) return { title: 'Blog | BCP' }
-  return {
-    title: `${result.post.title} | BCP`,
-    description: result.post.excerpt || undefined,
-  }
+  if (!result) return { title: 'Blog' }
+  return articleMetadata({
+    title: result.post.title,
+    description: result.post.excerpt,
+    path: `/blog/${slug}`,
+    image: result.post.cover,
+    publishedTime: result.post.date,
+  })
 }
 
 function formatDate(date: string) {

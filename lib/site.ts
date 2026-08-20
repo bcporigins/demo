@@ -6,6 +6,17 @@
 /* icon everywhere instead of linking somewhere broken.                */
 /* ------------------------------------------------------------------ */
 
+/** Absolute origin of the deployed site, used for canonical URLs, the sitemap,
+ *  and social share cards. Vercel sets VERCEL_PROJECT_PRODUCTION_URL on every
+ *  build, so the only reason to set NEXT_PUBLIC_SITE_URL is a custom domain
+ *  that should win over the .vercel.app one. */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'http://localhost:3000')
+).replace(/\/$/, '')
+
 export const WHATSAPP_COMMUNITY =
   process.env.NEXT_PUBLIC_BCP_WHATSAPP_URL ||
   'https://chat.whatsapp.com/HA9FWxgWWQA1vgMnDUAR1U'
