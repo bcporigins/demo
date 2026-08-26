@@ -28,6 +28,7 @@ data or to test form submissions.
 | `npm run typecheck` | `tsc --noEmit`. **There is no ESLint in this project** — `next lint` was removed in Next 16 |
 | `npm run notion:doctor` | Checks every Notion table and reports why a section might be blank. **Start here when content isn't showing** |
 | `npm run notion:setup <page-url>` | Creates all the content tables in a Notion page from scratch |
+| `npm run og:check [url]` | Verifies share metadata on every route. Defaults to localhost; pass a URL to check production |
 
 ---
 
@@ -148,6 +149,43 @@ placeholder material.
 The remaining fallbacks are generic marketing copy and real BCP figures, which is a
 different thing. Sections still running on built-in content today: partners, stats,
 events, videos, resources, partnership types.
+
+---
+
+## Share cards (Open Graph)
+
+Every route renders its own 1200×630 card at `/<route>/opengraph-image`, drawn by
+`next/og` from a single design in `lib/og.tsx`. A route opts in with a four-line
+`opengraph-image.tsx`:
+
+```tsx
+export const alt = 'Where BCP Origins started — BCP Origins'
+export const size = OG_SIZE
+export const contentType = OG_CONTENT_TYPE
+export default function Image() {
+  return bcpOgImage({ eyebrow: 'About', title: 'Where BCP Origins started', subtitle: '…' })
+}
+```
+
+`/blog/[slug]` and `/careers/[slug]` build theirs from the Notion row, so a post
+shares with its own title and a job listing with its location and commitment.
+
+Things worth knowing before you change any of it:
+
+- **Never set `openGraph.images` in metadata.** An explicit value overrides the
+  file-based card for that route. This is exactly why every page except the home
+  page once shared with no image at all.
+- **Never point a card at a Notion image.** Notion serves signed URLs that expire
+  within the hour; a crawler arriving later gets a dead link, which previews worse
+  than no image.
+- **Brand fonts live in `assets/fonts/`** and are read from disk, not fetched, so
+  rendering never depends on a network call. Satori needs the font bytes.
+- **Keep cards under ~300KB.** WhatsApp silently skips previews for large images.
+  The current ones are 45–64KB.
+- The layout keeps content in the left two-thirds and away from the edges so it
+  survives WhatsApp's square crop.
+
+`npm run og:check` verifies all of this per route and exits non-zero on failure.
 
 ---
 
