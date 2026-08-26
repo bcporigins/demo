@@ -126,10 +126,18 @@ number, and the five social accounts. **Blank out a social URL and its icon
 disappears from the site** rather than linking somewhere broken.
 
 ### The host questionnaire
-Set `NEXT_PUBLIC_BCP_HOST_FORM_URL` to a Tally link (`https://tally.so/r/xxxx`)
-and it is embedded inline on both /events and /regional-host, replacing the
-short built-in form. You then edit the questions entirely in Tally. Leave it
-blank and the built-in form runs instead — the page is never empty.
+Live: **https://tally.so/r/vG5eNg**, embedded inline on both /events and
+/regional-host. Edit the questions in Tally and the site picks them up
+immediately — no deploy needed.
+
+Responses land in Tally, not Notion. To be emailed on each one:
+Tally → the form → **Integrations / Notifications → Email** →
+`bcporigins@gmail.com`.
+
+To point at a different form, set `NEXT_PUBLIC_BCP_HOST_FORM_URL` (any Tally,
+Google Form, or Typeform URL). Set it to an empty value and the built-in short
+form runs instead, writing to the Notion **Host Applications** table — the page
+is never empty either way.
 
 ### Images that are not in Notion
 Replace the file in `public/bcp/` keeping the same filename:
@@ -148,8 +156,8 @@ Replace the file in `public/bcp/` keeping the same filename:
 | Newsletter / "Join the Community" email box (every page footer band) | Notion **Subscribers** | `NOTION_SUBSCRIBERS_DATABASE_ID` |
 | Contact form (/contact) | Notion **Contact Messages**, `Source = Contact page` | `NOTION_CONTACT_DATABASE_ID` |
 | "Let's Build Together" partnership enquiry (/partners) | The **same** Contact Messages table, `Source = Partnership inquiry`, with Organization and Partnership Type recorded | `NOTION_CONTACT_DATABASE_ID` |
-| Host a BCP Regional Event (/events) | Notion **Host Applications**, `Source = Events page` | `NOTION_HOST_APPS_DATABASE_ID` |
-| Host Application Form (/regional-host) | Notion **Host Applications**, `Source = Regional Host page` | `NOTION_HOST_APPS_DATABASE_ID` |
+| Host a BCP Regional Event (/events) | **Tally** — tally.so/r/vG5eNg | `NEXT_PUBLIC_BCP_HOST_FORM_URL` |
+| Host Application Form (/regional-host) | **Tally** — the same form | `NEXT_PUBLIC_BCP_HOST_FORM_URL` |
 | Job application (/careers/…) | Notion **Applications**, CV attached to the row | `NOTION_APPLICATIONS_DATABASE_ID` |
 | FAQ "was this helpful" votes | Increments Helpful / Not Helpful on the FAQ row | `NOTION_FAQS_DATABASE_ID` |
 | Apply to Speak (/events) | Opens an email to **brand@bcporigins.com** — no database |
@@ -158,8 +166,12 @@ Replace the file in `public/bcp/` keeping the same filename:
 **Nothing is emailed automatically.** Every submission lands in Notion and
 someone has to look there. To get notified instead, open the database in Notion
 and add an automation: **•••  → Automations → When page added → Send
-notification / Send email**. Point the Contact Messages one at
-brand@bcporigins.com for partnership rows and help@bcporigins.com for the rest.
+notification / Send email**, sending to **bcporigins@gmail.com**.
+
+Set one up on each of these four tables — Subscribers, Contact Messages,
+Applications, and (only if you switch the host form back to the built-in one)
+Host Applications. The Tally host form has its own email notification, set
+separately in Tally.
 
 If a table is not connected, the matching form tells the visitor to email
 help@bcporigins.com (or brand@bcporigins.com for partnerships) instead of

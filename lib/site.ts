@@ -28,7 +28,7 @@ export const YOUTUBE_CHANNEL =
  *  inline on /events and /regional-host. Empty falls back to the built-in
  *  Notion-backed form so the page never renders a dead section. */
 export const HOST_APPLICATION_FORM_URL =
-  process.env.NEXT_PUBLIC_BCP_HOST_FORM_URL || ''
+  process.env.NEXT_PUBLIC_BCP_HOST_FORM_URL || 'https://tally.so/r/vG5eNg'
 
 export const EMAILS = {
   general: 'help@bcporigins.com',
@@ -36,10 +36,11 @@ export const EMAILS = {
 } as const
 
 export const PHONE = {
-  /** Shown on the contact page. */
-  display: process.env.NEXT_PUBLIC_BCP_PHONE_DISPLAY || '+234 808 998 3425',
+  /** Shown on the contact page. Written in international form because the site
+   *  is read outside Nigeria; the same line dials locally as 0810 416 9627. */
+  display: process.env.NEXT_PUBLIC_BCP_PHONE_DISPLAY || '+234 810 416 9627',
   /** Used for the tel: link — digits and a leading + only. */
-  tel: process.env.NEXT_PUBLIC_BCP_PHONE_TEL || '+2348089983425',
+  tel: process.env.NEXT_PUBLIC_BCP_PHONE_TEL || '+2348104169627',
 } as const
 
 /** Blank out any account BCP does not run and its icon disappears sitewide.
