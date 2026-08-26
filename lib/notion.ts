@@ -785,9 +785,6 @@ export type Person = {
 /** Shown on a card whose row has a name but no portrait uploaded yet. */
 const PLACEHOLDER_PORTRAIT = '/bcp/core-values-photo.png'
 
-const PLACEHOLDER_BIO =
-  'Dedicated individuals working to empower the next generation of African Leaders.'
-
 const PERSON_GROUPS: PersonGroup[] = [
   'Core Team',
   'Regional Host',
@@ -816,7 +813,9 @@ export async function getPeople(group: PersonGroup): Promise<Person[]> {
         id: page.id,
         name,
         role: p.text('Role'),
-        bio: p.text('Bio') || PLACEHOLDER_BIO,
+        // Left empty on purpose: a generic line under a real person's name
+        // reads as their bio. The card shows role only when there is none.
+        bio: p.text('Bio'),
         photo: p.file('Photo') ?? p.cover() ?? PLACEHOLDER_PORTRAIT,
         linkedin: p.url('LinkedIn'),
         group: matched ?? 'Core Team',
