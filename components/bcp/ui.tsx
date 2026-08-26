@@ -1,6 +1,23 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Twitter, Youtube, Linkedin, Instagram } from 'lucide-react'
+import {
+  Facebook,
+  Twitter,
+  Youtube,
+  Linkedin,
+  Instagram,
+  Compass,
+  Rocket,
+  Users,
+  BookOpen,
+  CalendarDays,
+  Images,
+  MessagesSquare,
+  MapPin,
+  Handshake,
+  Briefcase,
+  type LucideIcon,
+} from 'lucide-react'
 import { SubscribeForm } from '@/components/bcp/subscribe-form'
 import {
   SOCIALS as SOCIAL_URLS,
@@ -9,21 +26,106 @@ import {
   WHATSAPP_COMMUNITY,
 } from '@/lib/site'
 
-// Labels are kept short so all twelve links sit on one unwrapped row from
-// 1024px up; the hamburger menu takes over below that.
+/**
+ * The site's twelve destinations, grouped by intent. One source of truth: the
+ * header builds a dropdown per group, the footer renders them as columns, and
+ * the 404 page uses the flattened list below — so a new page is added once.
+ *
+ * `description` shows only in the header dropdowns; the footer ignores it.
+ */
+export type NavItem = {
+  href: string
+  label: string
+  description: string
+  icon: LucideIcon
+}
+
+export const NAV_GROUPS: { heading: string; items: NavItem[] }[] = [
+  {
+    heading: 'Explore',
+    items: [
+      {
+        href: '/about',
+        label: 'About',
+        description: 'Where BCP started and what drives it',
+        icon: Compass,
+      },
+      {
+        href: '/programs',
+        label: 'Programs',
+        description: 'The tracks we run and who they serve',
+        icon: Rocket,
+      },
+      {
+        href: '/team',
+        label: 'Team',
+        description: 'The people behind BCP Origins',
+        icon: Users,
+      },
+      {
+        href: '/resources',
+        label: 'Resources',
+        description: 'Blog, research, and downloads',
+        icon: BookOpen,
+      },
+    ],
+  },
+  {
+    heading: 'Experiences',
+    items: [
+      {
+        href: '/events',
+        label: 'Events',
+        description: "What's coming up, and where",
+        icon: CalendarDays,
+      },
+      {
+        href: '/gallery',
+        label: 'Gallery',
+        description: 'Photos, highlights, and event recaps',
+        icon: Images,
+      },
+      {
+        href: '/community',
+        label: 'Community',
+        description: "Who it's for and how to join",
+        icon: MessagesSquare,
+      },
+    ],
+  },
+  {
+    heading: 'Get involved',
+    items: [
+      {
+        href: '/regional-host',
+        label: 'Regional Host',
+        description: 'Bring a BCP event to your city',
+        icon: MapPin,
+      },
+      {
+        href: '/partners',
+        label: 'Partners',
+        description: 'Reach a high-growth talent pool',
+        icon: Handshake,
+      },
+      {
+        href: '/careers',
+        label: 'Careers',
+        description: 'Open roles and volunteer positions',
+        icon: Briefcase,
+      },
+    ],
+  },
+]
+
+/** Sits beside the dropdowns in the header rather than inside one. */
+export const NAV_DIRECT = [{ href: '/contact', label: 'Contact' }]
+
+/** Every destination as a flat list, for places that want no grouping. */
 export const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/about', label: 'About' },
-  { href: '/team', label: 'Team' },
-  { href: '/events', label: 'Events' },
-  { href: '/community', label: 'Community' },
-  { href: '/careers', label: 'Careers' },
-  { href: '/gallery', label: 'Gallery' },
-  { href: '/partners', label: 'Partners' },
-  { href: '/programs', label: 'Programs' },
-  { href: '/regional-host', label: 'Regional Host' },
-  { href: '/resources', label: 'Resources' },
-  { href: '/contact', label: 'Contact' },
+  ...NAV_GROUPS.flatMap(({ items }) => items.map(({ href, label }) => ({ href, label }))),
+  ...NAV_DIRECT,
 ]
 
 // Accounts with a blank URL in lib/site.ts are dropped rather than linked to
@@ -191,40 +293,6 @@ export function JoinCommunity() {
   )
 }
 
-/* Twelve links in one flat row wrapped into an orphaned second line and read as
- * an undifferentiated list. Grouping them by intent — what BCP is, how to take
- * part, how to reach us — lets someone scan to the right column first. */
-const FOOTER_COLUMNS = [
-  {
-    heading: 'Explore',
-    links: [
-      { href: '/about', label: 'About' },
-      { href: '/programs', label: 'Programs' },
-      { href: '/team', label: 'Team' },
-      { href: '/resources', label: 'Resources' },
-    ],
-  },
-  {
-    heading: 'Experiences',
-    links: [
-      { href: '/events', label: 'Events' },
-      { href: '/gallery', label: 'Gallery' },
-      { href: '/community', label: 'Community' },
-    ],
-  },
-  {
-    // Short noun labels rather than "Become a Regional Host" — the column
-    // heading already carries the verb, and they stay on one line at every
-    // width instead of wrapping in the 1024-1280px band.
-    heading: 'Get involved',
-    links: [
-      { href: '/regional-host', label: 'Regional Host' },
-      { href: '/partners', label: 'Partners' },
-      { href: '/careers', label: 'Careers' },
-    ],
-  },
-]
-
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   const classes =
     'text-[16px] leading-8 text-[#c9ced3] transition-colors [font-family:var(--font-raleway)] hover:text-[#fed07b]'
@@ -268,13 +336,14 @@ export function BcpFooter() {
             />
           </div>
 
-          {FOOTER_COLUMNS.map(({ heading, links }) => (
+          {/* Same groups the header's dropdowns use, from NAV_GROUPS. */}
+          {NAV_GROUPS.map(({ heading, items }) => (
             <nav key={heading} className="flex flex-col gap-3" aria-label={heading}>
               <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#fed07b] [font-family:var(--font-raleway)]">
                 {heading}
               </h2>
               <div className="flex flex-col items-start">
-                {links.map(({ href, label }) => (
+                {items.map(({ href, label }) => (
                   <FooterLink key={label} href={href}>
                     {label}
                   </FooterLink>

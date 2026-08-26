@@ -22,6 +22,30 @@
   animation-play-state: paused;
 }
 
+/* Header dropdown panels — a short rise and fade so the panel reads as
+   coming from its trigger rather than appearing on top of the page. */
+@keyframes bcp-menu {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bcp-menu {
+  animation: bcp-menu 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcp-menu {
+    animation: none;
+  }
+}
+
 /* "What Makes BCP Different" — bars fall from above and settle with a bounce */
 @keyframes bcp-stack-drop {
   0% {
