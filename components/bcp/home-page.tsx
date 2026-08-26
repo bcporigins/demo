@@ -158,14 +158,17 @@ function CollageTile({ tile, stats }: { tile: Tile; stats: Stat[] }) {
   }
   const Icon = STAT_ICONS[stat.icon] ?? Users
   return (
+    // min-h rather than a fixed height: a long label like "Countries reached
+    // (Nigeria, UK, Canada, Cyprus)" wraps to five lines on a phone and used
+    // to spill out through the bottom border.
     <div
-      className={`flex h-[212px] w-full flex-col items-center gap-2.5 border-[6px] border-black bg-[#fbfbfb] p-5 ${TILE_SHADOW}`}
+      className={`flex min-h-[212px] w-full flex-col items-center justify-center gap-2 border-[6px] border-black bg-[#fbfbfb] p-5 ${TILE_SHADOW}`}
     >
-      <Icon className="size-[44px] text-[#2b3034]" strokeWidth={1.5} />
-      <p className="text-center text-[32px] font-semibold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
+      <Icon className="size-[44px] shrink-0 text-[#2b3034]" strokeWidth={1.5} />
+      <p className="text-center text-[32px] font-semibold leading-tight tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
         {stat.value}
       </p>
-      <p className="text-center text-[18px] tracking-[0.01em] text-[#828282] [font-family:var(--font-raleway)]">
+      <p className="text-balance text-center text-[16px] leading-[22px] tracking-[0.01em] text-[#828282] [font-family:var(--font-raleway)] md:text-[18px] md:leading-6">
         {stat.label}
       </p>
     </div>
