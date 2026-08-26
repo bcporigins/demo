@@ -33,18 +33,24 @@ export function pageMetadata({
   }
 }
 
-/** Same, for a Notion-backed article or job listing. */
+/**
+ * Same, for a Notion-backed article or job listing.
+ *
+ * Deliberately sets no `openGraph.images`. Two reasons: an explicit value
+ * overrides the route's own `opengraph-image.tsx`, and Notion's cover URLs are
+ * signed links that expire within the hour — a crawler fetching the page a day
+ * later would find a dead image, which is worse than no image at all. The
+ * generated card carries the post's title and excerpt instead.
+ */
 export function articleMetadata({
   title,
   description,
   path,
-  image,
   publishedTime,
 }: {
   title: string
   description?: string
   path: string
-  image?: string | null
   publishedTime?: string | null
 }): Metadata {
   const shareTitle = `${title} | BCP Origins`
@@ -60,9 +66,6 @@ export function articleMetadata({
       title: shareTitle,
       description: description || undefined,
       publishedTime: publishedTime || undefined,
-      // Notion's own file URLs expire after an hour, so only a stable cover
-      // survives here; otherwise the site-wide card is used.
-      images: image && !image.includes('amazonaws.com') ? [image] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
