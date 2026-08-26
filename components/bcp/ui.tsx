@@ -2,7 +2,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, Twitter, Youtube, Linkedin, Instagram } from 'lucide-react'
 import { SubscribeForm } from '@/components/bcp/subscribe-form'
-import { SOCIALS as SOCIAL_URLS } from '@/lib/site'
+import {
+  SOCIALS as SOCIAL_URLS,
+  EMAILS,
+  PHONE,
+  WHATSAPP_COMMUNITY,
+} from '@/lib/site'
 
 // Labels are kept short so all twelve links sit on one unwrapped row from
 // 1024px up; the hamburger menu takes over below that.
@@ -95,9 +100,15 @@ export function BrutalButton({
 export function SocialIcons({
   className = '',
   iconClassName = 'bg-[#fbfbfb] text-[#2b3034] hover:bg-[#fed07b]',
+  size = 'size-[50px]',
+  glyphSize = 'size-5',
 }: {
   className?: string
   iconClassName?: string
+  /** Diameter of the circle. Kept separate from `iconClassName` so a caller
+   *  can restyle the colours without also having to restate the size. */
+  size?: string
+  glyphSize?: string
 }) {
   if (SOCIALS.length === 0) return null
   return (
@@ -109,9 +120,9 @@ export function SocialIcons({
           aria-label={label}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex size-[50px] items-center justify-center rounded-full transition-colors ${iconClassName}`}
+          className={`flex ${size} items-center justify-center rounded-full transition-colors ${iconClassName}`}
         >
-          <Icon className="size-5" />
+          <Icon className={glyphSize} />
         </a>
       ))}
     </div>
@@ -180,31 +191,121 @@ export function JoinCommunity() {
   )
 }
 
+/* Twelve links in one flat row wrapped into an orphaned second line and read as
+ * an undifferentiated list. Grouping them by intent — what BCP is, how to take
+ * part, how to reach us — lets someone scan to the right column first. */
+const FOOTER_COLUMNS = [
+  {
+    heading: 'Explore',
+    links: [
+      { href: '/about', label: 'About' },
+      { href: '/programs', label: 'Programs' },
+      { href: '/team', label: 'Team' },
+      { href: '/resources', label: 'Resources' },
+    ],
+  },
+  {
+    heading: 'Experiences',
+    links: [
+      { href: '/events', label: 'Events' },
+      { href: '/gallery', label: 'Gallery' },
+      { href: '/community', label: 'Community' },
+    ],
+  },
+  {
+    // Short noun labels rather than "Become a Regional Host" — the column
+    // heading already carries the verb, and they stay on one line at every
+    // width instead of wrapping in the 1024-1280px band.
+    heading: 'Get involved',
+    links: [
+      { href: '/regional-host', label: 'Regional Host' },
+      { href: '/partners', label: 'Partners' },
+      { href: '/careers', label: 'Careers' },
+    ],
+  },
+]
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const classes =
+    'text-[16px] leading-8 text-[#c9ced3] transition-colors [font-family:var(--font-raleway)] hover:text-[#fed07b]'
+  return isExternal(href) ? (
+    <a href={href} className={classes} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ) : (
+    <Link href={href} className={classes}>
+      {children}
+    </Link>
+  )
+}
+
 export function BcpFooter() {
   return (
-    <footer className="bg-[#2b3034]">
-      <div className="mx-auto flex max-w-[1376px] flex-col gap-10 px-6 py-[84px] lg:px-8">
-        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-          <Image
-            src="/bcp/logo.png"
-            alt="BCP"
-            width={108}
-            height={31}
-            className="h-[31px] w-auto self-start brightness-0 invert"
-          />
-          <nav className="flex flex-wrap items-center gap-2 lg:gap-8">
-            {NAV_LINKS.map(({ href, label }, i) => (
-              <Link
-                key={label}
-                href={href}
-                className={`p-2.5 text-[18px] leading-7 text-[#fbfbfb] [font-family:var(--font-raleway)] hover:font-bold ${i === 0 ? 'font-bold' : 'font-medium'}`}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
+    <footer className="relative overflow-hidden border-t-[6px] border-[#fed07b] bg-[#2b3034]">
+      <div aria-hidden className="absolute inset-0 opacity-60" style={HERO_PATTERN} />
+      <div className="relative mx-auto max-w-[1376px] px-6 pb-10 pt-16 lg:px-8 lg:pt-20">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1.15fr] lg:gap-10">
+          {/* Brand */}
+          <div className="flex flex-col items-start gap-5">
+            <Link href="/" aria-label="BCP Origins — home">
+              <Image
+                src="/bcp/logo.png"
+                alt="BCP"
+                width={124}
+                height={36}
+                className="h-9 w-auto brightness-0 invert"
+              />
+            </Link>
+            <p className="max-w-[300px] text-[15px] leading-7 text-[#a9afb6] [font-family:var(--font-raleway)]">
+              A global community empowering young Africans with the knowledge, network,
+              and opportunities to build exceptional careers.
+            </p>
+            <SocialIcons
+              className="mt-1 gap-2.5"
+              size="size-10"
+              glyphSize="size-[18px]"
+              iconClassName="border border-white/20 bg-transparent text-[#fbfbfb] hover:border-[#fed07b] hover:bg-[#fed07b] hover:text-[#2b3034]"
+            />
+          </div>
+
+          {FOOTER_COLUMNS.map(({ heading, links }) => (
+            <nav key={heading} className="flex flex-col gap-3" aria-label={heading}>
+              <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#fed07b] [font-family:var(--font-raleway)]">
+                {heading}
+              </h2>
+              <div className="flex flex-col items-start">
+                {links.map(({ href, label }) => (
+                  <FooterLink key={label} href={href}>
+                    {label}
+                  </FooterLink>
+                ))}
+              </div>
+            </nav>
+          ))}
+
+          {/* Contact */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#fed07b] [font-family:var(--font-raleway)]">
+              Get in touch
+            </h2>
+            <div className="flex flex-col items-start">
+              <FooterLink href={`mailto:${EMAILS.general}`}>{EMAILS.general}</FooterLink>
+              <FooterLink href={`mailto:${EMAILS.brand}`}>{EMAILS.brand}</FooterLink>
+              <FooterLink href={`tel:${PHONE.tel}`}>{PHONE.display}</FooterLink>
+              <FooterLink href={WHATSAPP_COMMUNITY}>WhatsApp community</FooterLink>
+              <FooterLink href="/contact">Contact us</FooterLink>
+            </div>
+          </div>
         </div>
-        <SocialIcons />
+
+        <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[14px] text-[#8d949b] [font-family:var(--font-raleway)]">
+            &copy; {new Date().getFullYear()} BCP Origins. All rights reserved.
+          </p>
+          <p className="text-[14px] text-[#8d949b] [font-family:var(--font-raleway)]">
+            Building the next generation of African talents.
+          </p>
+        </div>
       </div>
     </footer>
   )
