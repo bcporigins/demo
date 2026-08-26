@@ -782,22 +782,11 @@ export type Person = {
   group: PersonGroup
 }
 
+/** Shown on a card whose row has a name but no portrait uploaded yet. */
 const PLACEHOLDER_PORTRAIT = '/bcp/core-values-photo.png'
 
 const PLACEHOLDER_BIO =
   'Dedicated individuals working to empower the next generation of African Leaders.'
-
-function placeholderPeople(group: PersonGroup, count: number): Person[] {
-  return Array.from({ length: count }).map((_, i) => ({
-    id: `fallback-${group.toLowerCase().replace(/\s+/g, '-')}-${i}`,
-    name: 'Toluwase Olugbemiro',
-    role: group === 'Regional Host' ? 'Regional Host' : 'Core Team',
-    bio: PLACEHOLDER_BIO,
-    photo: PLACEHOLDER_PORTRAIT,
-    linkedin: '',
-    group,
-  }))
-}
 
 const PERSON_GROUPS: PersonGroup[] = [
   'Core Team',
@@ -806,8 +795,14 @@ const PERSON_GROUPS: PersonGroup[] = [
   'Community Ambassador',
 ]
 
-/** All published people, grouped. Missing groups fall back to placeholders so
- *  the layout keeps its shape before the Notion table is filled in. */
+/**
+ * Published people in one group, straight from Notion.
+ *
+ * An empty result returns an empty array and every consumer hides its section,
+ * rather than inventing a roster. Fabricated people used to fill Core Team and
+ * Regional Hosts with fifteen identical cards, which was indistinguishable from
+ * a working CMS and hid the fact that the rows were still unpublished.
+ */
 export async function getPeople(group: PersonGroup): Promise<Person[]> {
   const rows = await queryCollection<Person>(
     'getPeople',
@@ -828,17 +823,7 @@ export async function getPeople(group: PersonGroup): Promise<Person[]> {
       }
     }
   )
-  if (!rows) {
-    // Community ambassadors have no placeholder roster — the section hides
-    // itself until real people are added in Notion.
-    if (group === 'Community Ambassador') return []
-    if (group === 'Advisor') return []
-    return placeholderPeople(group, group === 'Core Team' ? 15 : 6)
-  }
-  const inGroup = rows.filter((person) => person.group === group)
-  if (inGroup.length > 0) return inGroup
-  if (group === 'Community Ambassador' || group === 'Advisor') return []
-  return placeholderPeople(group, group === 'Core Team' ? 15 : 6)
+  return rows?.filter((person) => person.group === group) ?? []
 }
 
 /* ------------------------------------------------------------------ */
@@ -921,14 +906,10 @@ export async function getStats(): Promise<Stat[]> {
 
 export type Testimonial = { id: string; quote: string; name: string; role: string; photo: string }
 
-export const FALLBACK_TESTIMONIALS: Testimonial[] = Array.from({ length: 3 }).map((_, i) => ({
-  id: `fallback-testimonial-${i}`,
-  quote: 'BCP changed how I think about career growth and gave me the clarity I needed.',
-  name: 'Toluwase Olugbemiro',
-  role: 'BCP Alumni',
-  photo: '/bcp/testimonial-avatar.png',
-}))
-
+/**
+ * Published testimonials. Empty means the section hides itself — putting three
+ * copies of an invented quote on the page was worse than showing nothing.
+ */
 export async function getTestimonials(): Promise<Testimonial[]> {
   const rows = await queryCollection<Testimonial>(
     'getTestimonials',
@@ -945,7 +926,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
       }
     }
   )
-  return rows ?? FALLBACK_TESTIMONIALS
+  return rows ?? []
 }
 
 /* ------------------------------------------------------------------ */

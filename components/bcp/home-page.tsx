@@ -347,6 +347,7 @@ function TestimonialWatermark() {
 
 async function Testimonials() {
   const testimonials = await getTestimonials()
+  if (testimonials.length === 0) return null
   return (
     <section className="relative overflow-hidden bg-[#fbfbfb] py-[90px]">
       <TestimonialWatermark />
