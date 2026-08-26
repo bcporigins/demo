@@ -221,11 +221,14 @@ function WhatIsBcp() {
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-60"
       />
       <div className="relative mx-auto flex max-w-[1253px] flex-col items-center gap-10 px-6 lg:flex-row lg:items-center lg:gap-0 lg:px-0">
-        <div className="z-10 flex flex-col justify-center gap-10 border-[6px] border-[#2b3034] bg-[#fbfbfb] p-6 shadow-[0px_43px_21.5px_rgba(181,203,174,0.09),0px_11px_12px_rgba(181,203,174,0.1)] lg:-mr-24 lg:min-h-[452px] lg:max-w-[720px]">
-          <h2 className="text-[36px] font-bold leading-[48px] text-[#121212] [font-family:var(--font-hepta-slab)]">
+        <div className="z-10 flex flex-col justify-center gap-6 border-[6px] border-[#2b3034] bg-[#fbfbfb] p-5 shadow-[0px_43px_21.5px_rgba(181,203,174,0.09),0px_11px_12px_rgba(181,203,174,0.1)] sm:p-6 md:gap-10 lg:-mr-24 lg:min-h-[452px] lg:max-w-[720px]">
+          <h2 className="text-[28px] font-bold leading-tight text-[#121212] [font-family:var(--font-hepta-slab)] sm:text-[32px] md:text-[36px] md:leading-[48px]">
             What is BCP Origins?
           </h2>
-          <div className="max-w-[672px] space-y-4 text-justify text-[20px] leading-9 text-[#414141] [font-family:var(--font-raleway)] md:text-[24px]">
+          {/* Justified only from lg up. In a phone-width column justification
+              opens rivers of white space between words — the reason this block
+              looked broken on mobile and fine on desktop. */}
+          <div className="max-w-[672px] space-y-4 text-left text-[17px] leading-[1.65] text-[#414141] [font-family:var(--font-raleway)] sm:text-[19px] md:text-[24px] md:leading-9 lg:text-justify">
             <p>
               BCP Origins is a social impact organization building a community of young people
               equipped with the skills, network, and opportunities to thrive in today&rsquo;s

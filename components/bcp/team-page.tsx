@@ -1,67 +1,7 @@
-import { Linkedin } from 'lucide-react'
 import { BcpHero, JoinCommunity, BcpFooter } from '@/components/bcp/ui'
 import { PartnerGrid } from '@/components/bcp/partner-marquee'
-import { getPeople, getPartners, type Person } from '@/lib/notion'
-
-/* ------------------------------------------------------------------ */
-/* Flip card — photo front, dark bio back, spins on hover              */
-/*                                                                     */
-/* Name, role, bio, portrait, and LinkedIn all come from the Notion    */
-/* People table so the roster can be edited without a deploy.          */
-/* ------------------------------------------------------------------ */
-
-function TeamFlipCard({ member }: { member: Person }) {
-  // Portraits uploaded to Notion are served from short-lived signed URLs,
-  // so they use a plain img rather than next/image
-  const linkedInIcon = member.linkedin ? (
-    <a
-      href={member.linkedin}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`${member.name} on LinkedIn`}
-      className="shrink-0 transition-opacity hover:opacity-70"
-    >
-      <Linkedin className="size-5 text-white" />
-    </a>
-  ) : null
-
-  return (
-    <div className="group aspect-square w-full [perspective:1000px]">
-      <div className="relative size-full transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
-        {/* Front: photo */}
-        <div className="absolute inset-0 overflow-hidden border-[6px] border-[#2b3034] [backface-visibility:hidden]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={member.photo} alt={member.name} className="size-full object-cover" />
-          {/* Hide 
-          {linkedInIcon && <span className="absolute right-[13px] top-[13px]">{linkedInIcon}</span>}
-          <span className="absolute bottom-[9px] left-[10px] p-2.5 text-[20px] font-medium text-white backdrop-blur-[2px] [font-family:var(--font-raleway)]">
-            {member.name}
-          </span>
-          */}
-        </div>
-        {/* Back: dark bio card */}
-        <div className="absolute inset-0 flex flex-col justify-between gap-2 border-[6px] border-[#2b3034] bg-[#2b3034] p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-          <div className="flex items-start justify-between gap-2">
-            <span className="flex flex-col">
-              <span className="text-[19px] font-medium leading-tight text-white [font-family:var(--font-raleway)]">
-                {member.name}
-              </span>
-              {member.role && (
-                <span className="mt-1 text-[13px] leading-tight text-[#fed07b] [font-family:var(--font-raleway)]">
-                  {member.role}
-                </span>
-              )}
-            </span>
-            {linkedInIcon}
-          </div>
-          <p className="line-clamp-[9] text-[13px] leading-[1.45] text-[#d6d6d6] [font-family:var(--font-raleway)]">
-            {member.bio}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { TeamFlipCard } from '@/components/bcp/team-flip-card'
+import { getPeople, getPartners } from '@/lib/notion'
 
 /* ------------------------------------------------------------------ */
 /* Sections                                                            */
