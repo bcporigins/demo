@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "notion:setup": "node scripts/setup-notion.mjs"
+    "notion:setup": "node scripts/setup-notion.mjs",
+    "notion:doctor": "node scripts/notion-doctor.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.22.0",
