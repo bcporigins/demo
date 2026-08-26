@@ -93,11 +93,14 @@ function Benefits() {
         aria-hidden
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-60"
       />
+      {/* The PNG has an opaque near-white background, so at the section edge
+          it showed as a hard-edged white rectangle rather than a watermark.
+          multiply drops the white and keeps only the drawing. */}
       <img
         src="/bcp/idea-doodle.png"
         alt=""
         aria-hidden
-        className="pointer-events-none absolute bottom-0 left-[126px] hidden size-[147px] lg:block"
+        className="pointer-events-none absolute bottom-4 left-[126px] hidden size-[147px] mix-blend-multiply lg:block"
       />
       <div className="relative mx-auto flex max-w-[1440px] flex-col gap-10 px-6 lg:px-20">
         <h2 className="text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">
@@ -129,7 +132,11 @@ function Benefits() {
 
 function HowToJoin() {
   return (
-    <section className="bg-[#fbfbfb] py-[60px]">
+    // The section carries the same gutter as every other one on this page.
+    // Without it the bordered box below — max-w-[1280px] with no outer
+    // padding — ran flush to both screen edges under 1280px, and its 6px
+    // border read as a stray full-bleed rule across the page.
+    <section className="bg-[#fbfbfb] px-6 py-[60px] lg:px-20">
       <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-center gap-[52px] border-[6px] border-[#2b3034] bg-[#fbfbfb] px-6 py-14 shadow-[0px_0px_4px_rgba(176,200,169,0.2)]">
         <div className="flex flex-col items-center gap-2.5 text-center">
           {/* Matches the other section headings on this page — it was the only
