@@ -103,7 +103,10 @@ function ContactInfo() {
 
 function JoinOurCommunity() {
   return (
-    <section className="bg-[#fbfbfb] py-[55px]">
+    // Gutter on the section, or the bordered box below fills the width and
+    // its border sits flush to both screen edges under 1280px — the same
+    // full-bleed rule that showed up on /community.
+    <section className="bg-[#fbfbfb] px-6 py-[55px] lg:px-20">
       <div className="mx-auto flex min-h-[295px] max-w-[1280px] flex-col items-center justify-center gap-[52px] border-[6px] border-[#2b3034] bg-[#fbfbfb] px-6 shadow-[0px_0px_4px_rgba(176,200,169,0.2)]">
         <div className="flex flex-col items-center gap-2.5 text-center">
           <h2 className="text-[28px] font-semibold leading-tight text-[#2b3034] [font-family:var(--font-hepta-slab)] md:text-[36px]">
