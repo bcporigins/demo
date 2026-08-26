@@ -132,10 +132,12 @@ function HowToJoin() {
     <section className="bg-[#fbfbfb] py-[60px]">
       <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-center gap-[52px] border-[6px] border-[#2b3034] bg-[#fbfbfb] px-6 py-14 shadow-[0px_0px_4px_rgba(176,200,169,0.2)]">
         <div className="flex flex-col items-center gap-2.5 text-center">
-          <h2 className="text-[24px] font-semibold leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
+          {/* Matches the other section headings on this page — it was the only
+              one set in Raleway at 24px, which read as body copy. */}
+          <h2 className="text-[30px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)] md:text-[36px]">
             How to join
           </h2>
-          <p className="text-[20px] leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
+          <p className="max-w-[560px] text-[20px] leading-7 text-[#2b3034] [font-family:var(--font-raleway)]">
             Ready to connect with ambitious young Africans and unlock opportunities?
           </p>
         </div>
