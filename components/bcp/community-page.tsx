@@ -93,14 +93,11 @@ function Benefits() {
         aria-hidden
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-60"
       />
-      {/* The PNG has an opaque near-white background, so at the section edge
-          it showed as a hard-edged white rectangle rather than a watermark.
-          multiply drops the white and keeps only the drawing. */}
       <img
         src="/bcp/idea-doodle.png"
         alt=""
         aria-hidden
-        className="pointer-events-none absolute bottom-4 left-[126px] hidden size-[147px] mix-blend-multiply lg:block"
+        className="pointer-events-none absolute bottom-0 left-[126px] hidden size-[147px] lg:block"
       />
       <div className="relative mx-auto flex max-w-[1440px] flex-col gap-10 px-6 lg:px-20">
         <h2 className="text-[36px] font-bold tracking-[0.01em] text-[#2b3034] [font-family:var(--font-hepta-slab)]">

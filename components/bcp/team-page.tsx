@@ -32,10 +32,12 @@ function TeamFlipCard({ member }: { member: Person }) {
         <div className="absolute inset-0 overflow-hidden border-[6px] border-[#2b3034] [backface-visibility:hidden]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={member.photo} alt={member.name} className="size-full object-cover" />
+          {/* Hide 
           {linkedInIcon && <span className="absolute right-[13px] top-[13px]">{linkedInIcon}</span>}
           <span className="absolute bottom-[9px] left-[10px] p-2.5 text-[20px] font-medium text-white backdrop-blur-[2px] [font-family:var(--font-raleway)]">
             {member.name}
           </span>
+          */}
         </div>
         {/* Back: dark bio card */}
         <div className="absolute inset-0 flex flex-col justify-between gap-2 border-[6px] border-[#2b3034] bg-[#2b3034] p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
