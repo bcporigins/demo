@@ -7,8 +7,6 @@ Next.js 16 App Router, React 19, Tailwind CSS v4, deployed on Vercel. Almost all
 copy, people, events, and media come from Notion so the team can edit the site
 without a developer.
 
----
-
 ## Quick start
 
 ```bash
@@ -29,8 +27,6 @@ data or to test form submissions.
 | `npm run notion:doctor` | Checks every Notion table and reports why a section might be blank. **Start here when content isn't showing** |
 | `npm run notion:setup <page-url>` | Creates all the content tables in a Notion page from scratch |
 | `npm run og:check [url]` | Verifies share metadata on every route. Defaults to localhost; pass a URL to check production |
-
----
 
 ## How to think about this codebase
 
@@ -69,8 +65,6 @@ scripts/
 
 `@/` maps to the repo root, so `@/lib/notion` and `@/components/bcp/ui` resolve
 from anywhere.
-
----
 
 ## The Notion CMS
 
@@ -150,8 +144,6 @@ The remaining fallbacks are generic marketing copy and real BCP figures, which i
 different thing. Sections still running on built-in content today: partners, stats,
 events, videos, resources, partnership types.
 
----
-
 ## Share cards (Open Graph)
 
 Every route renders its own 1200×630 card at `/<route>/opengraph-image`, drawn by
@@ -187,8 +179,6 @@ Things worth knowing before you change any of it:
 
 `npm run og:check` verifies all of this per route and exits non-zero on failure.
 
----
-
 ## Caching
 
 Every Notion-backed page sets `export const revalidate = 60`, so edits in Notion
@@ -199,8 +189,6 @@ Note the stale-while-revalidate behaviour: the first request after the window
 expires still serves the old page and *triggers* the rebuild, so the change lands on
 the next request. If you refresh once and see stale content, refresh again before
 concluding anything is broken.
-
----
 
 ## Environment
 
@@ -220,8 +208,6 @@ Copy `.env.example` to `.env.local`. Everything is optional; missing values fall
 > strings** — `NOTION_TOKEN=""` disables every read silently. `vercel env pull` to a
 > scratch file and diff against `.env.local` before debugging anything else.
 
----
-
 ## Deployment
 
 Vercel project **`demo`** under the **`team-bcp`** team, git-linked to
@@ -230,8 +216,6 @@ Vercel project **`demo`** under the **`team-bcp`** team, git-linked to
 - `www.bcporigins.com` serves the site; `bcporigins.com` 308-redirects to it.
 - `.vercel.app` deployment URLs sit behind Vercel SSO — verify against the custom
   domain, not the deployment URL.
-
----
 
 ## Design system
 
@@ -260,8 +244,6 @@ Navigation groups are defined once, in `NAV_GROUPS` in `components/bcp/ui.tsx`. 
 header builds a dropdown per group, the footer renders them as columns, and the 404
 page uses the flattened list — so a new page is added in one place.
 
----
-
 ## Gotchas
 
 - **Notion image URLs expire after about an hour.** Anything from `getPeople().photo`
@@ -274,8 +256,6 @@ page uses the flattened list — so a new page is added in one place.
 - **Content not appearing?** Run `npm run notion:doctor` first. It will tell you
   whether the id is unset, the integration can't reach the table, a column the code
   reads is missing, or rows exist but aren't published.
-
----
 
 ## Related docs
 
